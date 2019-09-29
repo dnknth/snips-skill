@@ -1,7 +1,3 @@
-from glob import glob
-from os.path import basename
-from os.path import splitext
-
 from setuptools import setup, find_packages
 
 
@@ -15,8 +11,9 @@ setup(
     license="MIT",
     author="dnknth",
     url="https://github.com/dnknth/snipsclient.git",
-    package_dir={'': '.'},
-    py_modules=[ "mqtt", "snips"],
+    packages=find_packages('.'),
+    package_dir={'snipsclient': 'snipsclient'},
+    py_modules=[ "snipsclient.mqtt", "snipsclient.snips"],
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
