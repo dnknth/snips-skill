@@ -55,7 +55,7 @@ class Client( PahoClient):
                 "Callback for the Paho MQTT client"
                 if json: msg.payload = loads( msg.payload.decode())
                 # User-provided callback
-                method( msg, userdata)
+                method( client, userdata, msg)
 
             self._subscriptions[ topic] = (wrapped, qos)
             return wrapped
@@ -85,7 +85,7 @@ if __name__ == '__main__': # Demo code
     client = Client()
     
     @client.topic( sys.argv[2] if len( sys.argv) > 2 else '#')
-    def print_msg( msg, userdata):
+    def print_msg( client, userdata, msg):
         print( ("%s: %s" % (msg.topic, msg.payload))[:80])
     
     client.run( sys.argv[1] if len( sys.argv) > 1 else 'localhost')

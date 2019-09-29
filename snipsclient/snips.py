@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import toml
 
 try:
@@ -17,6 +18,7 @@ class Client( mqtt.Client):
     END_SESSION = 'hermes/dialogueManager/endSession'
     CONTINUUE_SESSION = 'hermes/dialogueManager/continueSession'
     INTENT_NOT_RECOGNIZED = 'hermes/dialogueManager/intentNotRecognized'
+    SESSION_ENDED = 'hermes/dialogueManager/sessionEnded'
 
 
     def __init__( self, config=CONFIG, 
@@ -69,6 +71,11 @@ class Client( mqtt.Client):
         return self.topic( self.INTENT_NOT_RECOGNIZED, qos, True)
 
 
+    def session_ended( self, qos=1):
+        'Decorator for intent callbacks'
+        return self.topic( self.SESSION_ENDED, qos, True)
+
+
     # See: https://docs.snips.ai/reference/dialogue#outbound-message-2
     def end_session( self, session_id, text=None, qos=1):
         'End the session with an optional message'
@@ -87,7 +94,12 @@ class Client( mqtt.Client):
         if slot: payload[ 'slot'] = slot
         if send_intent_not_recognized:
             payload[ 'sendIntentNotRecognized'] = bool( send_intent_not_recognized)
-        if custom_data: payload[ 'customData'] = custom_data
+        if custom_data:
+            if type( custom_data) is dict:
+                payload[ 'customData'] = json.dumps( custom_data)
+            else:
+                payload[ 'customData'] = str( custom_data)
+
         self.publish( self.CONTINUE_SESSION, payload, qos=qos, json=True)
 
 
@@ -105,7 +117,7 @@ if __name__ == '__main__': # Demo code
     client = Client()
 
     @client.topic( 'hermes/nlu/intentParsed/#', json=True)
-    def print_msg( msg, userdata):
+    def print_msg( client, userdata, msg):
         w = max( map( len, msg.payload.keys()))
         print()
         print( BOLD + GREEN + msg.topic + ENDC + ':')
