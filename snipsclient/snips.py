@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import functools
 import json
 import toml
+import uuid
 
 try:
     from . import mqtt
@@ -15,10 +17,17 @@ class Client( mqtt.Client):
     CONFIG = '/etc/snips.toml'
     
     INTENT = 'hermes/intent'
-    END_SESSION = 'hermes/dialogueManager/endSession'
-    CONTINUUE_SESSION = 'hermes/dialogueManager/continueSession'
+    
+    # Session life cycle messages
+    START_SESSION = 'hermes/dialogueManager/startSession'
+    SESSION_STARTED = 'hermes/dialogueManager/sessionStarted'
     INTENT_NOT_RECOGNIZED = 'hermes/dialogueManager/intentNotRecognized'
+    CONTINUE_SESSION = 'hermes/dialogueManager/continueSession'
+    END_SESSION = 'hermes/dialogueManager/endSession'
     SESSION_ENDED = 'hermes/dialogueManager/sessionEnded'
+    
+    # Misc
+    PLAY_BYTES = 'hermes/audioServer/{site_id}/playBytes/{request_id}'
 
 
     def __init__( self, config=CONFIG, 
@@ -27,6 +36,8 @@ class Client( mqtt.Client):
         
         super().__init__( client_id, clean_session, userdata,
             protocol, transport)
+
+        self.log.debug( "Loading config: %s", config)        
         self.config = toml.load( config)
 
         
@@ -61,30 +72,75 @@ class Client( mqtt.Client):
         super().run( host=host, port=port, username=username, password=password)
 
 
-    def intent( self, intent, qos=1):
+    def on_session_started( self, qos=1):
+        'Decorator for session start callbacks'
+        return self.topic( self.SESSION_STARTED, qos=qos, json=True)
+
+
+    def on_session_ended( self, qos=1):
+        'Decorator for session end callbacks'
+        return self.topic( self.SESSION_ENDED, qos=qos, json=True)
+
+
+    def on_intent( self, intent, qos=1):
         'Decorator for intent callbacks'
-        return self.topic( '%s/%s' % (self.INTENT, intent), qos, True)
+        return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos, json=True)
 
 
-    def intent_not_recognized( self, qos=1):
-        'Decorator for intent callbacks'
-        return self.topic( self.INTENT_NOT_RECOGNIZED, qos, True)
+    def on_intent_not_recognized( self, qos=1):
+        'Decorator for unknown intent callbacks'
+        return self.topic( self.INTENT_NOT_RECOGNIZED, qos=qos, json=True)
 
 
-    def session_ended( self, qos=1):
-        'Decorator for intent callbacks'
-        return self.topic( self.SESSION_ENDED, qos, True)
+    # See: https://docs.snips.ai/reference/dialogue#session-initialization-action
+    def action_init( self, text=None, intent_filter=[],
+            can_be_enqueued=True, send_intent_not_recognized=False):
+        'Build the init part of action type to start a session'
+        
+        init = { "type" : "action" }
+        if text: init[ "text"] = str( text)
+        if not can_be_enqueued: init[ "canBeEnqueued"] = False
+        if intent_filter: init[ "intentFilter"] = intent_filter
+        if send_intent_not_recognized: init[ "sendIntentNotRecognized"] = True
+        return init
 
 
-    # See: https://docs.snips.ai/reference/dialogue#outbound-message-2
+    # See: https://docs.snips.ai/reference/dialogue#session-initialization-notification
+    def notification_init( self, text):
+        'Build the init part of notification type to start a session'
+        return {
+            "type" : "notification",
+            "text" : str( text)
+        }
+
+
+    # See: https://docs.snips.ai/reference/dialogue#start-session
+    def start_session( self, site_id, init, custom_data=None, qos=1):
+        'End the session with an optional message'
+        payload = {
+            'siteId': site_id,
+            'init' : init
+        }
+        if custom_data: payload[ 'customData'] = str( custom_data)
+        self.log.debug( "Starting %s session on site '%s'", init.get( 'type'), site_id)
+        self.publish( self.START_SESSION, payload, qos=qos, json=True)
+
+
+    # See: https://docs.snips.ai/reference/dialogue#end-session
     def end_session( self, session_id, text=None, qos=1):
         'End the session with an optional message'
         payload = { 'sessionId': session_id }
-        if text: payload[ 'text'] = text
+        if text:
+            payload[ 'text'] = text
+            self.log.debug( "Ending session %s with message: %s",
+                session_id, text)
+        else:
+            self.log.debug( "Ending session %s", session_id)
+            
         self.publish( self.END_SESSION, payload, qos=qos, json=True)
 
 
-    # See: https://docs.snips.ai/reference/dialogue#outbound-message-1
+    # See: https://docs.snips.ai/reference/dialogue#continue-session
     def continue_session( self, session_id, text, intent_filter=None, slot=None,
             send_intent_not_recognized=False, custom_data=None, qos=1):
         'Continue the session with a question'
@@ -95,12 +151,37 @@ class Client( mqtt.Client):
         if send_intent_not_recognized:
             payload[ 'sendIntentNotRecognized'] = bool( send_intent_not_recognized)
         if custom_data:
-            if type( custom_data) is dict:
+            if type( custom_data) in (dict, list, set):
                 payload[ 'customData'] = json.dumps( custom_data)
             else:
                 payload[ 'customData'] = str( custom_data)
 
+        self.log.debug( "Continuing session %s with message: %s", session_id, text)
         self.publish( self.CONTINUE_SESSION, payload, qos=qos, json=True)
+
+
+    # See: https://docs.snips.ai/reference/dialogue#start-session
+    def play_sound( self, site_id, wav_data, request_id=None):
+        'Play a WAV sound at the given site'
+        if not request_id: request_id = str( uuid.uuid4())
+        self.publish( self.PLAY_BYTES.format( site_id=site_id, request_id=request_id), payload=wav_data)
+        return request_id
+
+
+    def debug_json( self, *keys):
+        'Decorator to debug message payloads'
+    
+        def wrapper( method):
+            @functools.wraps( method)
+            def wrapped( client, userdata, msg):
+                if type( msg.payload) is dict:
+                    data = msg.payload
+                    if keys: data = { k: v for k, v in data.items() if k in keys }
+                    self.log.debug( 'Payload: %s',
+                        json.dumps( data, sort_keys=True, indent=4))
+                return method( client, userdata, msg)
+            return wrapped
+        return wrapper
 
 
 if __name__ == '__main__': # Demo code

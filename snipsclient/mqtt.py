@@ -5,6 +5,8 @@
 """
 
 from json import dumps, loads
+import functools
+import logging
 from paho.mqtt.client import Client as PahoClient, MQTTv311
 from paho.mqtt.publish import single
 
@@ -25,6 +27,7 @@ class Client( PahoClient):
             userdata, protocol, transport)
         self._subscriptions = {}
         self._tls_initialized = False
+        self.log = logging.getLogger( self.__class__.__name__)
 
 
     def run( self, host='localhost', port=DEFAULT_PORT,
@@ -35,7 +38,10 @@ class Client( PahoClient):
         if username: self.username_pw_set( username, password)
         if use_tls or port == self.DEFAULT_TLS_PORT:
             if not self._tls_initialized: self.tls_set()
+        self.log.debug( "Connecting to MQTT broker %s as user '%s'",
+            host, username or '')
         self.connect( host, port, keepalive, bind_address)
+        self.log.info( "Connected to MQTT broker: %s", host)
         self.loop_forever()
         
         
@@ -49,11 +55,15 @@ class Client( PahoClient):
         
         assert topic not in self._subscriptions, \
             "Topic '%s' is already registered" % topic
-            
+        
         def wrapper( method):
+            
+            @functools.wraps( method)
             def wrapped( client, userdata, msg):
                 "Callback for the Paho MQTT client"
+                self.log.debug( 'Received message: %s', msg.topic)
                 if json: msg.payload = loads( msg.payload.decode())
+                
                 # User-provided callback
                 method( client, userdata, msg)
 
@@ -70,12 +80,14 @@ class Client( PahoClient):
         for topic, (callback, qos) in self._subscriptions.items():
             self.subscribe( topic, qos)
             self.message_callback_add( topic, callback)
+            self.log.debug( 'Subscribed to MQTT topic: %s', topic)
 
 
     def publish( self, topic, payload=None, qos=0, retain=False, json=False):
         "Publish a payload to a MQTT topic"
         
         if json and payload: payload = dumps( payload)
+        self.log.debug( 'Publishing message: %s', topic)
         return super().publish( topic, payload, qos, retain)
 
 
