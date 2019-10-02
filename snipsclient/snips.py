@@ -77,28 +77,28 @@ class Client( mqtt.Client):
         super().run( host=host, port=port, username=username, password=password)
 
 
-    def on_session_started( self, qos=1):
+    def on_session_started( self, qos=1, payload_converter=parse_json):
         'Decorator for session start callbacks'
         return self.topic( self.SESSION_STARTED, qos=qos,
-            payload_converter=parse_json)
+            payload_converter=payload_converter)
 
 
-    def on_session_ended( self, qos=1):
+    def on_session_ended( self, qos=1, payload_converter=parse_json):
         'Decorator for session end callbacks'
         return self.topic( self.SESSION_ENDED, qos=qos,
-            payload_converter=parse_json)
+            payload_converter=payload_converter)
 
 
-    def on_intent( self, intent, qos=1):
+    def on_intent( self, intent, qos=1, payload_converter=parse_json):
         'Decorator for intent callbacks'
         return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos,
-            payload_converter=parse_json)
+            payload_converter=payload_converter)
 
 
-    def on_intent_not_recognized( self, qos=1):
+    def on_intent_not_recognized( self, qos=1, payload_converter=parse_json):
         'Decorator for unknown intent callbacks'
         return self.topic( self.INTENT_NOT_RECOGNIZED, qos=qos,
-            payload_converter=parse_json)
+            payload_converter=payload_converter)
 
 
     # See: https://docs.snips.ai/reference/dialogue#session-initialization-action

@@ -23,6 +23,16 @@ class InstantTimeValue( SlotValue):
         self.value = datetime.fromisoformat( self.value[:19] + self.value[-7:])
         
 
+class TimeIntervalValue( SlotValue):
+
+    def __init__( self, json_dict):
+        super().__init__( json_dict)
+        t1, t2 = json_dict[ 'from'], json_dict[ 'to']
+        self.value = (
+            datetime.fromisoformat( t1[:19] + t1[-7:]) if t1 else None,
+            datetime.fromisoformat( t2[:19] + t2[-7:]) if t2 else None)
+        
+
 class TemperatureValue( SlotValue):
 
     def __init__( self, json_dict):
@@ -39,8 +49,8 @@ class Slot:
     VALUE_MAP = {
         'InstantTime': InstantTimeValue,
         'Temperature': TemperatureValue,
-        
-        # TODO 'TimeInterval'
+        'TimeInterval': TimeIntervalValue,
+
         # TODO 'Duration'
     }
     
