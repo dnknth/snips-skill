@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import functools
-import json
+from json import dumps, loads
 import toml
 import uuid
 
@@ -10,6 +10,11 @@ try:
 except ImportError:
     import mqtt
 
+
+def parse_json( payload):
+    'parse msg.payload as JSON'
+    return loads( payload.decode())
+    
 
 class Client( mqtt.Client):
     "MQTT client with auto-configuration from snips.toml"
@@ -74,22 +79,26 @@ class Client( mqtt.Client):
 
     def on_session_started( self, qos=1):
         'Decorator for session start callbacks'
-        return self.topic( self.SESSION_STARTED, qos=qos, json=True)
+        return self.topic( self.SESSION_STARTED, qos=qos,
+            payload_converter=parse_json)
 
 
     def on_session_ended( self, qos=1):
         'Decorator for session end callbacks'
-        return self.topic( self.SESSION_ENDED, qos=qos, json=True)
+        return self.topic( self.SESSION_ENDED, qos=qos,
+            payload_converter=parse_json)
 
 
     def on_intent( self, intent, qos=1):
         'Decorator for intent callbacks'
-        return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos, json=True)
+        return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos,
+            payload_converter=parse_json)
 
 
     def on_intent_not_recognized( self, qos=1):
         'Decorator for unknown intent callbacks'
-        return self.topic( self.INTENT_NOT_RECOGNIZED, qos=qos, json=True)
+        return self.topic( self.INTENT_NOT_RECOGNIZED, qos=qos,
+            payload_converter=parse_json)
 
 
     # See: https://docs.snips.ai/reference/dialogue#session-initialization-action
@@ -121,23 +130,29 @@ class Client( mqtt.Client):
             'siteId': site_id,
             'init' : init
         }
-        if custom_data: payload[ 'customData'] = str( custom_data)
+        
+        if type( custom_data) in (dict, list, tuple):
+            payload[ 'customData'] = dumps( custom_data)
+        elif custom_data is not None:
+            payload[ 'customData'] = str( custom_data)
+            
         self.log.debug( "Starting %s session on site '%s'", init.get( 'type'), site_id)
-        self.publish( self.START_SESSION, payload, qos=qos, json=True)
+        self.publish( self.START_SESSION, dumps( payload), qos=qos)
 
 
     # See: https://docs.snips.ai/reference/dialogue#end-session
     def end_session( self, session_id, text=None, qos=1):
         'End the session with an optional message'
         payload = { 'sessionId': session_id }
+        
         if text:
             payload[ 'text'] = text
             self.log.debug( "Ending session %s with message: %s",
                 session_id, text)
-        else:
-            self.log.debug( "Ending session %s", session_id)
+                
+        else: self.log.debug( "Ending session %s", session_id)
             
-        self.publish( self.END_SESSION, payload, qos=qos, json=True)
+        self.publish( self.END_SESSION, dumps( payload), qos=qos)
 
 
     # See: https://docs.snips.ai/reference/dialogue#continue-session
@@ -150,14 +165,14 @@ class Client( mqtt.Client):
         if slot: payload[ 'slot'] = slot
         if send_intent_not_recognized:
             payload[ 'sendIntentNotRecognized'] = bool( send_intent_not_recognized)
-        if custom_data:
-            if type( custom_data) in (dict, list, set):
-                payload[ 'customData'] = json.dumps( custom_data)
-            else:
-                payload[ 'customData'] = str( custom_data)
+
+        if type( custom_data) in (dict, list, tuple):
+            payload[ 'customData'] = dumps( custom_data)
+        elif custom_data is not None:
+            payload[ 'customData'] = str( custom_data)
 
         self.log.debug( "Continuing session %s with message: %s", session_id, text)
-        self.publish( self.CONTINUE_SESSION, payload, qos=qos, json=True)
+        self.publish( self.CONTINUE_SESSION, dumps( payload), qos=qos)
 
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
@@ -178,7 +193,7 @@ class Client( mqtt.Client):
                     data = msg.payload
                     if keys: data = { k: v for k, v in data.items() if k in keys }
                     self.log.debug( 'Payload: %s',
-                        json.dumps( data, sort_keys=True, indent=4))
+                        dumps( data, sort_keys=True, indent=4))
                 return method( client, userdata, msg)
             return wrapped
         return wrapper
@@ -197,7 +212,7 @@ if __name__ == '__main__': # Demo code
 
     client = Client()
 
-    @client.topic( 'hermes/nlu/intentParsed/#', json=True)
+    @client.on_intent( '#')
     def print_msg( client, userdata, msg):
         w = max( map( len, msg.payload.keys()))
         print()

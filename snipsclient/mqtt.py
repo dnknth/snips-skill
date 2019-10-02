@@ -4,7 +4,6 @@
     Simplistic wrapper for the Paho MQTT client.
 """
 
-from json import dumps, loads
 import functools
 import logging
 from paho.mqtt.client import Client as PahoClient, MQTTv311
@@ -45,12 +44,15 @@ class Client( PahoClient):
         self.loop_forever()
         
         
-    def topic( self, topic, qos=0, json=False):
+    def topic( self, topic, qos=0, payload_converter=None):
         """ Decorator for callback functions.
             Callbacks are invoked with two positional parameters:
              - msg: MQTT message
              - userdata: User-defined extra data
             Return values are not expected.
+            :param topc: MQTT topic, may contain wildcards
+            :param qos: MQTT quality of service (default: 0)
+            :param payload_converter: unary function to transform the message payload
         """
         
         assert topic not in self._subscriptions, \
@@ -62,7 +64,7 @@ class Client( PahoClient):
             def wrapped( client, userdata, msg):
                 "Callback for the Paho MQTT client"
                 self.log.debug( 'Received message: %s', msg.topic)
-                if json: msg.payload = loads( msg.payload.decode())
+                if payload_converter: msg.payload = payload_converter( msg.payload)
                 
                 # User-provided callback
                 method( client, userdata, msg)
@@ -81,14 +83,6 @@ class Client( PahoClient):
             self.subscribe( topic, qos)
             self.message_callback_add( topic, callback)
             self.log.debug( 'Subscribed to MQTT topic: %s', topic)
-
-
-    def publish( self, topic, payload=None, qos=0, retain=False, json=False):
-        "Publish a payload to a MQTT topic"
-        
-        if json and payload: payload = dumps( payload)
-        self.log.debug( 'Publishing message: %s', topic)
-        return super().publish( topic, payload, qos, retain)
 
 
 if __name__ == '__main__': # Demo code
