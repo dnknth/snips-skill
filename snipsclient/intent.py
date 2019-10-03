@@ -4,6 +4,12 @@ import json
 from datetime import datetime
 
 
+def parse_date( date_str):
+    'Convert a Snips date string to datetime'
+    date_str = date_str[:19] + date_str[-7:-3] + date_str[-2:]
+    return datetime.strptime( date_str, "%Y-%m-%d %H:%M:%S %z")
+
+
 class SlotValue:
 
     def __init__( self, json_dict):
@@ -20,7 +26,7 @@ class InstantTimeValue( SlotValue):
         super().__init__( json_dict)
         self.grain = json_dict[ 'grain']
         self.precision = json_dict[ 'precision']
-        self.value = datetime.fromisoformat( self.value[:19] + self.value[-7:])
+        self.value = parse_date( self.value)
         
 
 class TimeIntervalValue( SlotValue):
@@ -28,9 +34,14 @@ class TimeIntervalValue( SlotValue):
     def __init__( self, json_dict):
         super().__init__( json_dict)
         t1, t2 = json_dict[ 'from'], json_dict[ 'to']
-        self.value = (
-            datetime.fromisoformat( t1[:19] + t1[-7:]) if t1 else None,
-            datetime.fromisoformat( t2[:19] + t2[-7:]) if t2 else None)
+        self.value = (parse_date( t1) if t1 else None, parse_date( t2) if t2 else None)
+        
+
+class DurationValue( SlotValue):
+
+    def __init__( self, json_dict):
+        super().__init__( json_dict)
+        self.minutes = json_dict[ 'minutes'] # TODO verify
         
 
 class TemperatureValue( SlotValue):
@@ -47,19 +58,19 @@ class TemperatureValue( SlotValue):
 class Slot:
 
     VALUE_MAP = {
-        'InstantTime': InstantTimeValue,
-        'Temperature': TemperatureValue,
+        'InstantTime' : InstantTimeValue,
+        'Temperature' : TemperatureValue,
         'TimeInterval': TimeIntervalValue,
-
-        # TODO 'Duration'
+        'Duration'    : DurationValue,
     }
     
     
-    def __init__( self, json_dict):
-        self.confidence_score = json_dict[ 'confidenceScore']
-        self.raw_value = json_dict[ 'rawValue']
+    def __init__( self, position, json_dict):
+        self.position = position
         self.entity = json_dict[ 'entity']
         self.slot_name = json_dict[ 'slotName']
+        self.raw_value = json_dict[ 'rawValue']
+        self.confidence_score = json_dict[ 'confidenceScore']
         
         r = json_dict[ 'range']
         self.range = (r['start'], r['end']) if r else None
@@ -106,8 +117,10 @@ class IntentPayload:
         
         self.asr_tokens = json_dict.get( 'asrTokens')
         self.asr_confidence = json_dict.get( 'asrConfidence')
-        self.slots = map( Slot, json_dict.get( 'slots', []))
-
+        self.slots = { s['slotName'] : Slot( i, s)
+            for i, s in enumerate( json_dict.get( 'slots', [])) }
+        self.slot_values = { name : s.value
+            for name, s in self.slots.items() }
 
     def __repr__( self):
         return "<%s %s>" % (self.intent, list( self.slots))
@@ -117,7 +130,6 @@ def parse_intent( payload):
     'Parse intent data as objects'
     if type( payload) is bytes: payload = json.loads( payload)
     return IntentPayload( payload)
-
 
 
 if __name__ == '__main__': # Demo code
@@ -141,7 +153,7 @@ if __name__ == '__main__': # Demo code
         print( BOLD + GREEN + msg.topic + ENDC + ':')
         for k in ('site_id', 'input', 'intent'):
             print( YELLOW, k.ljust( 8) + ENDC, getattr( msg.payload, k))
-        for i, s in enumerate( msg.payload.slots):
-            print( PURPLE, ( "slot %d" % i).ljust( 8) + ENDC, s)
+        for name, slot in msg.payload.slots.items():
+            print( PURPLE, name.ljust( 8) + ENDC, slot)
 
     client.run()

@@ -146,6 +146,7 @@ class Client( mqtt.Client):
         payload = { 'sessionId': session_id }
         
         if text:
+            text = ' '.join( text.split())
             payload[ 'text'] = text
             self.log.debug( "Ending session %s with message: %s",
                 session_id, text)
@@ -160,6 +161,7 @@ class Client( mqtt.Client):
             send_intent_not_recognized=False, custom_data=None, qos=1):
         'Continue the session with a question'
         
+        text = ' '.join( text.split())
         payload = { 'text': text, 'sessionId': session_id }
         if intent_filter: payload[ 'intentFilter'] = intent_filter
         if slot: payload[ 'slot'] = slot
