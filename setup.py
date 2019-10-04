@@ -5,15 +5,17 @@ with open( "requirements.txt", "r") as fh:
     requirements = fh.read().splitlines()
 
 setup(
-    name="snipsclient",
+    name="snips-skill",
     version="0.1.0",
-    description="A utility package to simplify the development of Snips client applications",
+    description="Simplify the development of Snips skills",
     license="MIT",
     author="dnknth",
-    url="https://github.com/dnknth/snipsclient.git",
+    url="https://github.com/dnknth/snips_skill.git",
     packages=find_packages('.'),
-    package_dir={'snipsclient': 'snipsclient'},
-    py_modules=[ "snipsclient.mqtt", "snipsclient.snips"],
+    package_dir={'snips_skill': 'snips_skill'},
+    package_data = { 'snips_skill': ['locale/*/LC_MESSAGES/*.mo'] },
+    py_modules=[ "snips_skill.mqtt", "snips_skill.snips",
+        "snips_skill.intent", "snips_skill.multi_room"],
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,

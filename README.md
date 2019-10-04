@@ -1,3 +1,10 @@
-# snipsclient
+# snips-skill
 
-This is a small utility package to simplify the development of [Snips](https://snips.ai) client applications in Python.
+Helpers to simplify the development of [Snips](https://snips.ai) skills in Python.
+
+## Contents
+ - `snips_skill.mqtt`: A thin wrapper around [paho-mqtt](https://www.eclipse.org/paho/clients/python/docs/)
+ - `snips_skill.snips`: Auto-configuration from `/etc/snips/toml`, plus Snips-specific decorators for callbacks.
+ - `snips_skill.intent`: Parse `hermes/intent/#` messages into a pythonic format.
+ - `snips_skill.multi_room`: Utilities for multi-room setups.
+ 

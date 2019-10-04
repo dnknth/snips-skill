@@ -6,9 +6,15 @@ import toml
 import uuid
 
 try:
+    from . import intent
     from . import mqtt
 except ImportError:
-    import mqtt
+    import intent, mqtt
+
+
+class SnipsError( Exception):
+    'Signal that an intent cannot be handled'
+    pass
 
 
 def parse_json( payload):
@@ -89,7 +95,7 @@ class Client( mqtt.Client):
             payload_converter=payload_converter)
 
 
-    def on_intent( self, intent, qos=1, payload_converter=parse_json):
+    def on_intent( self, intent, qos=1, payload_converter=intent.parse_intent):
         'Decorator for intent callbacks'
         return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos,
             payload_converter=payload_converter)

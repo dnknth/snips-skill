@@ -1,0 +1,93 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-10-04 21:03+0200\n"
+"PO-Revision-Date: 2019-10-04 21:03+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.4\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: snipsclient/multi_room.py:15
+msgid "bathroom"
+msgstr "Badezimmer"
+
+#: snipsclient/multi_room.py:15
+msgid "in the bathroom"
+msgstr "im Badezimmer"
+
+#: snipsclient/multi_room.py:16
+msgid "bedroom"
+msgstr "Schlafzimmer"
+
+#: snipsclient/multi_room.py:16
+msgid "in the bedroom"
+msgstr "im Schlafzimmer"
+
+#: snipsclient/multi_room.py:17
+msgid "dining room"
+msgstr "Esszimmer"
+
+#: snipsclient/multi_room.py:17
+msgid "in the dining room"
+msgstr "im Esszimmer"
+
+#: snipsclient/multi_room.py:18
+msgid "livingroom"
+msgstr "Wohnzimmer"
+
+#: snipsclient/multi_room.py:18
+msgid "in the livingroom"
+msgstr "im Wohnzimmer"
+
+#: snipsclient/multi_room.py:19
+msgid "kid's room"
+msgstr "Kinderzimmer"
+
+#: snipsclient/multi_room.py:19
+msgid "in the kid's room"
+msgstr "im Kinderzimmer"
+
+#: snipsclient/multi_room.py:20
+msgid "kitchen"
+msgstr "Küche"
+
+#: snipsclient/multi_room.py:20
+msgid "in the kitchen"
+msgstr "in der Küche"
+
+#: snipsclient/multi_room.py:21
+msgid "office"
+msgstr "Arbeitszimmer"
+
+#: snipsclient/multi_room.py:21
+msgid "in the office"
+msgstr "im Arbeitszimmer"
+
+#: snipsclient/multi_room.py:39 snipsclient/multi_room.py:52
+msgid "here"
+msgstr "Hier"
+
+#: snipsclient/multi_room.py:56
+#, python-brace-format
+msgid "The room {room} is unknown."
+msgstr "Den Raum {room} kenne ich leider nicht."
+
+#: snipsclient/multi_room.py:67
+msgid "This room has not been configured yet."
+msgstr "Dieser Raum wurde noch nicht eingerichtet."
+
+#: snipsclient/multi_room.py:74
+#, python-brace-format
+msgid "in the {room}"
+msgstr "im {room}"
