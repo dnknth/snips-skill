@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-10-04 21:03+0200\n"
-"PO-Revision-Date: 2019-10-04 21:03+0200\n"
+"PO-Revision-Date: 2019-10-05 00:20+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -76,7 +76,7 @@ msgstr "im Arbeitszimmer"
 
 #: snipsclient/multi_room.py:39 snipsclient/multi_room.py:52
 msgid "here"
-msgstr "Hier"
+msgstr "hier"
 
 #: snipsclient/multi_room.py:56
 #, python-brace-format

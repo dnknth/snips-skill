@@ -48,7 +48,7 @@ class MultiRoomConfig:
         'Get the spoken room name'
         if slot not in payload.slot_values: return default_name
         room = payload.slot_values[ slot].value
-        return (default_name if room == _('here')
+        return (default_name if room == _('here').lower()
             else self.preposition( room))
         
 
@@ -62,7 +62,7 @@ class MultiRoomConfig:
         if slot not in payload.slot_values: return 
 
         room = payload.slot_values[ slot].value
-        if room == _("here"): return payload.site_id
+        if room == _("here").lower(): return payload.site_id
 
         if room not in self.config or 'site_id' not in self.config[ room]:
             raise SnipsSiteError( _("The room {room} is unknown.").format(
