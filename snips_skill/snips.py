@@ -57,7 +57,7 @@ class Client( mqtt.Client):
         common = self.config.get( 'snips-common', {})
         
         host, port = None, None
-        host_port = common.get( 'mqtt')
+        host_port = common.get( 'mqtt', 'localhost:1883')
         if host_port:
             if ':' in host_port:
                 host, port = host_port.split( ':')
