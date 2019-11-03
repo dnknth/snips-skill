@@ -23,19 +23,20 @@ def parse_json( payload):
     
 
 class Client( mqtt.Client):
-    "MQTT client with auto-configuration from snips.toml"
+    "Snips client with auto-configuration"
     
     CONFIG = '/etc/snips.toml'
     
-    INTENT = 'hermes/intent'
+    INTENT   = 'hermes/intent'
+    DIALOGUE = 'hermes/dialogueManager/'
     
     # Session life cycle messages
-    START_SESSION = 'hermes/dialogueManager/startSession'
-    SESSION_STARTED = 'hermes/dialogueManager/sessionStarted'
-    INTENT_NOT_RECOGNIZED = 'hermes/dialogueManager/intentNotRecognized'
-    CONTINUE_SESSION = 'hermes/dialogueManager/continueSession'
-    END_SESSION = 'hermes/dialogueManager/endSession'
-    SESSION_ENDED = 'hermes/dialogueManager/sessionEnded'
+    START_SESSION         = DIALOGUE + 'startSession'
+    SESSION_STARTED       = DIALOGUE + 'sessionStarted'
+    INTENT_NOT_RECOGNIZED = DIALOGUE + 'intentNotRecognized'
+    CONTINUE_SESSION      = DIALOGUE + 'continueSession'
+    END_SESSION           = DIALOGUE + 'endSession'
+    SESSION_ENDED         = DIALOGUE + 'sessionEnded'
     
     # Misc
     PLAY_BYTES = 'hermes/audioServer/{site_id}/playBytes/{request_id}'
@@ -76,7 +77,7 @@ class Client( mqtt.Client):
         
         if cafile or cert or port == self.DEFAULT_TLS_PORT:
             assert not common.get( 'mqtt_tls_hostname'), \
-                "mqtt_tls_hostname not yet implemented"
+                "mqtt_tls_hostname not supported"
             self.tls_set( ca_certs=cafile, certfile=cert, keyfile=key)
             self._tls_initialized = True
         
@@ -84,25 +85,25 @@ class Client( mqtt.Client):
 
 
     def on_session_started( self, qos=1, payload_converter=parse_json):
-        'Decorator for session start callbacks'
+        'Decorator for session start handler methods'
         return self.topic( self.SESSION_STARTED, qos=qos,
             payload_converter=payload_converter)
 
 
     def on_session_ended( self, qos=1, payload_converter=parse_json):
-        'Decorator for session end callbacks'
+        'Decorator for session end handler methods'
         return self.topic( self.SESSION_ENDED, qos=qos,
             payload_converter=payload_converter)
 
 
     def on_intent( self, intent, qos=1, payload_converter=intent.parse_intent):
-        'Decorator for intent callbacks'
+        'Decorator for intent handler methods'
         return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos,
             payload_converter=payload_converter)
 
 
     def on_intent_not_recognized( self, qos=1, payload_converter=parse_json):
-        'Decorator for unknown intent callbacks'
+        'Decorator for unknown intent handler methods'
         return self.topic( self.INTENT_NOT_RECOGNIZED, qos=qos,
             payload_converter=payload_converter)
 
@@ -205,27 +206,3 @@ class Client( mqtt.Client):
                 return method( client, userdata, msg)
             return wrapped
         return wrapper
-
-
-if __name__ == '__main__': # Demo code
-
-    BLUE      = '\033[94m'
-    GREEN     = '\033[92m'
-    PURPLE    = '\033[95m'
-    RED       = '\033[91m'
-    YELLOW    = '\033[93m'
-    
-    BOLD      = '\033[1m'
-    ENDC      = '\033[0m'
-
-    client = Client()
-
-    @client.on_intent( '#')
-    def print_msg( client, userdata, msg):
-        w = max( map( len, msg.payload.keys()))
-        print()
-        print( BOLD + GREEN + msg.topic + ENDC + ':')
-        for k, v in sorted( msg.payload.items()):
-            print( YELLOW, k.ljust( w) + ENDC, v)
-
-    client.run()

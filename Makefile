@@ -1,7 +1,7 @@
 GETTEXT = /usr/local/opt/gettext
 
-POT = snips_skill/locale/messages.pot
-LOCALE = snips_skill/locale/de/LC_MESSAGES/messages.po
+POT = snips_skill/locale/multi_room.pot
+LOCALE = snips_skill/locale/de/LC_MESSAGES/multi_room.po
 
 build: $(LOCALE:.po=.mo) $(POT)
 	python3 setup.py build

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-04 21:03+0200\n"
-"PO-Revision-Date: 2019-10-05 00:20+0200\n"
+"POT-Creation-Date: 2019-11-03 14:03+0100\n"
+"PO-Revision-Date: 2019-11-03 14:04+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -18,76 +18,76 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: snipsclient/multi_room.py:15
+#: snips_skill/multi_room.py:26
 msgid "bathroom"
 msgstr "Badezimmer"
 
-#: snipsclient/multi_room.py:15
+#: snips_skill/multi_room.py:26
 msgid "in the bathroom"
 msgstr "im Badezimmer"
 
-#: snipsclient/multi_room.py:16
+#: snips_skill/multi_room.py:27
 msgid "bedroom"
 msgstr "Schlafzimmer"
 
-#: snipsclient/multi_room.py:16
+#: snips_skill/multi_room.py:27
 msgid "in the bedroom"
 msgstr "im Schlafzimmer"
 
-#: snipsclient/multi_room.py:17
+#: snips_skill/multi_room.py:28
 msgid "dining room"
 msgstr "Esszimmer"
 
-#: snipsclient/multi_room.py:17
+#: snips_skill/multi_room.py:28
 msgid "in the dining room"
 msgstr "im Esszimmer"
 
-#: snipsclient/multi_room.py:18
+#: snips_skill/multi_room.py:29
 msgid "livingroom"
 msgstr "Wohnzimmer"
 
-#: snipsclient/multi_room.py:18
+#: snips_skill/multi_room.py:29
 msgid "in the livingroom"
 msgstr "im Wohnzimmer"
 
-#: snipsclient/multi_room.py:19
+#: snips_skill/multi_room.py:30
 msgid "kid's room"
 msgstr "Kinderzimmer"
 
-#: snipsclient/multi_room.py:19
+#: snips_skill/multi_room.py:30
 msgid "in the kid's room"
 msgstr "im Kinderzimmer"
 
-#: snipsclient/multi_room.py:20
+#: snips_skill/multi_room.py:31
 msgid "kitchen"
 msgstr "Küche"
 
-#: snipsclient/multi_room.py:20
+#: snips_skill/multi_room.py:31
 msgid "in the kitchen"
 msgstr "in der Küche"
 
-#: snipsclient/multi_room.py:21
+#: snips_skill/multi_room.py:32
 msgid "office"
 msgstr "Arbeitszimmer"
 
-#: snipsclient/multi_room.py:21
+#: snips_skill/multi_room.py:32
 msgid "in the office"
 msgstr "im Arbeitszimmer"
 
-#: snipsclient/multi_room.py:39 snipsclient/multi_room.py:52
+#: snips_skill/multi_room.py:51 snips_skill/multi_room.py:65
 msgid "here"
 msgstr "hier"
 
-#: snipsclient/multi_room.py:56
+#: snips_skill/multi_room.py:68
 #, python-brace-format
 msgid "The room {room} is unknown."
 msgstr "Den Raum {room} kenne ich leider nicht."
 
-#: snipsclient/multi_room.py:67
+#: snips_skill/multi_room.py:78
 msgid "This room has not been configured yet."
 msgstr "Dieser Raum wurde noch nicht eingerichtet."
 
-#: snipsclient/multi_room.py:74
+#: snips_skill/multi_room.py:85
 #, python-brace-format
 msgid "in the {room}"
 msgstr "im {room}"

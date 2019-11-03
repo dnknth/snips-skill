@@ -8,7 +8,7 @@ except ImportError:
 
 
 # Install translations
-TRANSLATION = gettext.translation( 'messages',
+TRANSLATION = gettext.translation( 'multi_room', fallback=True,
     localedir=os.path.join( os.path.dirname( __file__), 'locale'))
 _ = TRANSLATION.gettext
 

@@ -17,6 +17,8 @@ class Client( PahoClient):
     WEBSOCKETS = "websockets"
     DEFAULT_PORT = 1883
     DEFAULT_TLS_PORT = 8883
+    
+    LOG_LEVEL = logging.WARNING
 
 
     def __init__( self, client_id=None, clean_session=True, \
@@ -27,21 +29,26 @@ class Client( PahoClient):
         self._subscriptions = {}
         self._tls_initialized = False
         self.log = logging.getLogger( self.__class__.__name__)
+        self.log.setLevel( self.LOG_LEVEL)
 
 
     def run( self, host='localhost', port=DEFAULT_PORT,
-        username=None, password=None,
-        keepalive=60, bind_address="", use_tls=False):
+            username=None, password=None,
+            keepalive=60, bind_address="", use_tls=False):
         "Connect to the MQTT broker and invoke callback methods"
         
-        if username: self.username_pw_set( username, password)
-        if use_tls or port == self.DEFAULT_TLS_PORT:
-            if not self._tls_initialized: self.tls_set()
-        self.log.debug( "Connecting to MQTT broker %s as user '%s'",
-            host, username or '')
-        self.connect( host, port, keepalive, bind_address)
-        self.log.info( "Connected to MQTT broker: %s", host)
-        self.loop_forever()
+        try:
+            if username: self.username_pw_set( username, password)
+            if use_tls or port == self.DEFAULT_TLS_PORT:
+                if not self._tls_initialized: self.tls_set()
+            self.log.debug( "Connecting to MQTT broker %s as user '%s'",
+                host, username or '')
+            self.connect( host, port, keepalive, bind_address)
+            self.log.info( "Connected to MQTT broker: %s", host)
+            self.loop_forever()
+            
+        except KeyboardInterrupt:
+            self.log.debug( "Shutting down")
         
         
     def topic( self, topic, qos=0, payload_converter=None):

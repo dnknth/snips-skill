@@ -7,4 +7,4 @@ Helpers to simplify the development of [Snips](https://snips.ai) skills in Pytho
  - `snips_skill.snips`: Auto-configuration from `/etc/snips/toml`, plus Snips-specific decorators for callbacks.
  - `snips_skill.intent`: Parse `hermes/intent/#` messages into a pythonic format.
  - `snips_skill.multi_room`: Utilities for multi-room setups.
- 
+ - `snips_skill.skill`: Base class for Snips actions.

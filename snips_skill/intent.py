@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def parse_date( date_str):
@@ -20,6 +20,7 @@ class SlotValue:
         return "<%s value: %s>" % (self.kind, self.value)
         
 
+# See: https://docs.snips.ai/articles/platform/dialog/slot-types#time-related-entities
 class InstantTimeValue( SlotValue):
 
     def __init__( self, json_dict):
@@ -37,11 +38,19 @@ class TimeIntervalValue( SlotValue):
         self.value = (parse_date( t1) if t1 else None, parse_date( t2) if t2 else None)
         
 
+# See: https://docs.snips.ai/articles/platform/dialog/slot-types#duration-entities
+# TODO: years, quarters and months are not parsed
 class DurationValue( SlotValue):
 
     def __init__( self, json_dict):
         super().__init__( json_dict)
-        self.minutes = json_dict[ 'minutes'] # TODO verify
+        self.precision = json_dict[ 'precision']
+        self.value = timedelta(
+            weeks=json_dict[ 'weeks'],
+            days=json_dict[ 'days'],
+            hours=json_dict[ 'hours'],
+            minutes=json_dict[ 'minutes'],
+            seconds=json_dict[ 'seconds'])
         
 
 class TemperatureValue( SlotValue):
@@ -54,14 +63,26 @@ class TemperatureValue( SlotValue):
         return "<%s value: %s %s>" % (self.kind, self.value, self.unit)
         
 
+class MonetaryValue( SlotValue):
+
+    def __init__( self, json_dict):
+        super().__init__( json_dict)
+        self.unit = json_dict[ 'unit']
+        self.precision = json_dict[ 'precision']
+    
+    def __repr__( self):
+        return "<%s value: %s %s>" % (self.kind, self.value, self.unit)
+        
+
 # See: https://docs.snips.ai/reference/dialogue#slot
 class Slot:
 
     VALUE_MAP = {
-        'InstantTime' : InstantTimeValue,
-        'Temperature' : TemperatureValue,
-        'TimeInterval': TimeIntervalValue,
-        'Duration'    : DurationValue,
+        'InstantTime'   : InstantTimeValue,
+        'TimeInterval'  : TimeIntervalValue,
+        'Duration'      : DurationValue,
+        'Temperature'   : TemperatureValue,
+        'AmountOfMoney' : MonetaryValue,
     }
     
     
@@ -130,30 +151,3 @@ def parse_intent( payload):
     'Parse intent data as objects'
     if type( payload) is bytes: payload = json.loads( payload)
     return IntentPayload( payload)
-
-
-if __name__ == '__main__': # Demo code
-
-    from snips import Client
-    
-    BLUE      = '\033[94m'
-    GREEN     = '\033[92m'
-    PURPLE    = '\033[95m'
-    RED       = '\033[91m'
-    YELLOW    = '\033[93m'
-    
-    BOLD      = '\033[1m'
-    ENDC      = '\033[0m'
-
-    client = Client()
-
-    @client.topic( 'hermes/intent/#', payload_converter=parse_intent)
-    def print_msg( client, userdata, msg):
-        print()
-        print( BOLD + GREEN + msg.topic + ENDC + ':')
-        for k in ('site_id', 'input', 'intent'):
-            print( YELLOW, k.ljust( 8) + ENDC, getattr( msg.payload, k))
-        for name, slot in msg.payload.slots.items():
-            print( PURPLE, name.ljust( 8) + ENDC, slot)
-
-    client.run()
