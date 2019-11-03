@@ -3,14 +3,10 @@ import gettext, os
 
 try:
     from . snips import SnipsError
+    from . i18n import gettext as _
 except ImportError:
     from snips import SnipsError
-
-
-# Install translations
-TRANSLATION = gettext.translation( 'multi_room', fallback=True,
-    localedir=os.path.join( os.path.dirname( __file__), 'locale'))
-_ = TRANSLATION.gettext
+    from i18n import gettext as _
 
 
 class SnipsSiteError( Exception):

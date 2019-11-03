@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-03 14:03+0100\n"
+"POT-Creation-Date: 2019-11-03 20:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,76 +17,76 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: snips_skill/multi_room.py:26
+#: snips_skill/multi_room.py:22
 msgid "bathroom"
 msgstr ""
 
-#: snips_skill/multi_room.py:26
+#: snips_skill/multi_room.py:22
 msgid "in the bathroom"
 msgstr ""
 
-#: snips_skill/multi_room.py:27
+#: snips_skill/multi_room.py:23
 msgid "bedroom"
 msgstr ""
 
-#: snips_skill/multi_room.py:27
+#: snips_skill/multi_room.py:23
 msgid "in the bedroom"
 msgstr ""
 
-#: snips_skill/multi_room.py:28
+#: snips_skill/multi_room.py:24
 msgid "dining room"
 msgstr ""
 
-#: snips_skill/multi_room.py:28
+#: snips_skill/multi_room.py:24
 msgid "in the dining room"
 msgstr ""
 
-#: snips_skill/multi_room.py:29
+#: snips_skill/multi_room.py:25
 msgid "livingroom"
 msgstr ""
 
-#: snips_skill/multi_room.py:29
+#: snips_skill/multi_room.py:25
 msgid "in the livingroom"
 msgstr ""
 
-#: snips_skill/multi_room.py:30
+#: snips_skill/multi_room.py:26
 msgid "kid's room"
 msgstr ""
 
-#: snips_skill/multi_room.py:30
+#: snips_skill/multi_room.py:26
 msgid "in the kid's room"
 msgstr ""
 
-#: snips_skill/multi_room.py:31
+#: snips_skill/multi_room.py:27
 msgid "kitchen"
 msgstr ""
 
-#: snips_skill/multi_room.py:31
+#: snips_skill/multi_room.py:27
 msgid "in the kitchen"
 msgstr ""
 
-#: snips_skill/multi_room.py:32
+#: snips_skill/multi_room.py:28
 msgid "office"
 msgstr ""
 
-#: snips_skill/multi_room.py:32
+#: snips_skill/multi_room.py:28
 msgid "in the office"
 msgstr ""
 
-#: snips_skill/multi_room.py:51 snips_skill/multi_room.py:65
+#: snips_skill/multi_room.py:47 snips_skill/multi_room.py:61
 msgid "here"
 msgstr ""
 
-#: snips_skill/multi_room.py:68
+#: snips_skill/multi_room.py:64
 #, python-brace-format
 msgid "The room {room} is unknown."
 msgstr ""
 
-#: snips_skill/multi_room.py:78
+#: snips_skill/multi_room.py:74
 msgid "This room has not been configured yet."
 msgstr ""
 
-#: snips_skill/multi_room.py:85
+#: snips_skill/multi_room.py:81
 #, python-brace-format
 msgid "in the {room}"
 msgstr ""
