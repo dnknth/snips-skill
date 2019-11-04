@@ -9,7 +9,7 @@ except ImportError:
     from i18n import gettext as _
 
 
-class SnipsSiteError( Exception):
+class SnipsSiteError( SnipsError):
     'Complain about unknown room names or site IDs'
     pass
 
