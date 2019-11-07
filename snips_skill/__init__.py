@@ -1,6 +1,7 @@
 from . import mqtt
-from . snips import Client
-from . skill import Skill
+from . snips import Client, debug_json, end_on_error, end_session, SnipsError
+from . skill import log_intent, Skill
+from . multi_room import MultiRoomConfig
 
 
 def use_language( language, path=None):

@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import functools
 import gettext, logging, os
 
 try:
@@ -69,6 +70,17 @@ class Skill( snips.Client):
         for name, slot in msg.payload.slots.items():
             self.log.log( level, '%s %s', _colorize( PURPLE, name.ljust( 8), colorize),
                 slot.value)
+
+
+def log_intent( method):
+    @functools.wraps( method)
+    def wrapped( client, userdata, msg):
+        try:
+            client.log_intent( msg, level=logging.DEBUG, colorize=True)
+            return method( client, userdata, msg)
+        except snips.SnipsError as e:
+            client.end_session( msg.payload.session_id, str( e))
+    return wrapped
 
 
 if __name__ == '__main__': # demo code

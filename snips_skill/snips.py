@@ -192,17 +192,42 @@ class Client( mqtt.Client):
         return request_id
 
 
-    def debug_json( self, *keys):
-        'Decorator to debug message payloads'
+def debug_json( *keys):
+    'Decorator to debug message payloads'
+
+    def wrapper( method):
+        @functools.wraps( method)
+        def wrapped( client, userdata, msg):
+            if type( msg.payload) is dict:
+                data = msg.payload
+                if keys: data = { k: v for k, v in data.items() if k in keys }
+                client.log.debug( 'Payload: %s',
+                    dumps( data, sort_keys=True, indent=4))
+            return method( client, userdata, msg)
+        return wrapped
+    return wrapper
+
+
+def end_on_error( method):
+    "Decorator to end a session on SnipsError."
     
-        def wrapper( method):
-            @functools.wraps( method)
-            def wrapped( client, userdata, msg):
-                if type( msg.payload) is dict:
-                    data = msg.payload
-                    if keys: data = { k: v for k, v in data.items() if k in keys }
-                    self.log.debug( 'Payload: %s',
-                        dumps( data, sort_keys=True, indent=4))
-                return method( client, userdata, msg)
-            return wrapped
-        return wrapper
+    @functools.wraps( method)
+    def wrapped( client, userdata, msg):
+        try:
+            return method( client, userdata, msg)
+        except SnipsError as e:
+            client.end_session( msg.payload.session_id, str( e))
+    return wrapped
+
+
+def end_session( method):
+    """
+        Decorator to end a session with an optional message.
+        The decorated function should either return a string, or throw a SnipsError.
+    """
+    
+    @functools.wraps( method)
+    def wrapped( client, userdata, msg):
+        client.end_session( msg.payload.session_id, 
+            method( client, userdata, msg))
+    return end_on_error( wrapped)
