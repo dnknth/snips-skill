@@ -6,6 +6,9 @@ LOCALE = snips_skill/locale/de/LC_MESSAGES/snips_skill.po
 build: $(LOCALE:.po=.mo) $(POT)
 	python3 setup.py build
 
+log:
+	.venv3/bin/python3 -m snips_skill.skill
+
 .venv3: requirements.txt
 	[ -d $@ ] || python3 -m venv $@
 	.venv3/bin/pip3 install -r $<

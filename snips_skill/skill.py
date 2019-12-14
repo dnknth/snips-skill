@@ -40,19 +40,20 @@ class Skill( snips.Client):
     
     DEFAULT_LOG_LEVEL = 2
 
+
     def __init__( self, args=None):
+        logging.basicConfig()
+        super().__init__()
+
         self.parser = ArgumentParser()
         self.parser.add_argument( '-v', '--verbosity',
             type=int, choices=[0, 1, 2, 3], default=self.DEFAULT_LOG_LEVEL,
-            help='verbosity level; 0=errors only, 1=errors and warnings, 2=normal output, 3=debug output')
+            help='Logging verbosity: 0=errors only, 1=errors and warnings, 2=normal output, 3=debug output')
         self.add_arguments()
+        
         self.options = self.parser.parse_args( args)
-
-        logging.basicConfig()
-        self.LOG_LEVEL = self.LOG_LEVELS[ self.options.verbosity]
-        super().__init__()
-
-        self.log.debug( "Command line options: %s", self.options)
+        self.log.setLevel( self.LOG_LEVELS[ self.options.verbosity])
+        self.log.debug( 'Command line options: %s', self.options)
     
 
     def add_arguments( self):
@@ -63,7 +64,8 @@ class Skill( snips.Client):
     def log_intent( self, msg, level=logging.DEBUG, colorize=True):
         "Log an intent message for debugging"
         
-        self.log.log( level, _colorize( BOLD + GREEN, msg.topic, colorize) + ':')
+        self.log.log( level, '%s %s', _colorize( BLUE, 'intent'.ljust( 8), colorize),
+            _colorize( BOLD + GREEN, msg.payload.intent.intent_name, colorize))
         for k in ('site_id', 'input'):
             self.log.log( level, '%s %s', _colorize( BLUE, k.ljust( 8), colorize),
                 getattr( msg.payload, k))
@@ -85,10 +87,10 @@ def log_intent( method):
 
 if __name__ == '__main__': # demo code
 
-    client = Skill()
+    client = Skill().connect()
 
     @client.on_intent( '#')
     def print_msg( client, userdata, msg):
         client.log_intent( msg, level=logging.INFO)
 
-    client.run()
+    client.loop_forever()

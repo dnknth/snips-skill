@@ -18,8 +18,6 @@ class Client( PahoClient):
     DEFAULT_PORT = 1883
     DEFAULT_TLS_PORT = 8883
     
-    LOG_LEVEL = logging.WARNING
-
 
     def __init__( self, client_id=None, clean_session=True, \
         userdata=None, protocol=MQTTv311, transport=TCP):
@@ -29,23 +27,28 @@ class Client( PahoClient):
         self._subscriptions = {}
         self._tls_initialized = False
         self.log = logging.getLogger( self.__class__.__name__)
-        self.log.setLevel( self.LOG_LEVEL)
+        self.log.setLevel( logging.WARNING)
 
 
-    def run( self, host='localhost', port=DEFAULT_PORT,
+    def connect( self, host='localhost', port=DEFAULT_PORT,
             username=None, password=None,
             keepalive=60, bind_address="", use_tls=False):
-        "Connect to the MQTT broker and invoke callback methods"
+        "Connect to the MQTT broker"
         
+        if username: self.username_pw_set( username, password)
+        if use_tls or port == self.DEFAULT_TLS_PORT:
+            if not self._tls_initialized: self.tls_set()
+        self.log.debug( "Connecting to MQTT broker %s as user '%s'",
+            host, username or '')
+        super().connect( host, port, keepalive, bind_address)
+        self.log.info( "Connected to MQTT broker: %s", host)
+        return self
+
+    
+    def loop_forever( self):
+        "Wait for messages and invoke callbacks until interrupted"
         try:
-            if username: self.username_pw_set( username, password)
-            if use_tls or port == self.DEFAULT_TLS_PORT:
-                if not self._tls_initialized: self.tls_set()
-            self.log.debug( "Connecting to MQTT broker %s as user '%s'",
-                host, username or '')
-            self.connect( host, port, keepalive, bind_address)
-            self.log.info( "Connected to MQTT broker: %s", host)
-            self.loop_forever()
+            super().loop_forever()
             
         except KeyboardInterrupt:
             self.log.debug( "Shutting down")
@@ -79,6 +82,12 @@ class Client( PahoClient):
             self._subscriptions[ topic] = (wrapped, qos)
             return wrapped
         return wrapper
+        
+        
+    def publish( self, topic, payload=None, qos=0, retain=False):
+        "Send an MQTT message"
+        self.log.debug( 'Publishing: %s', topic)
+        super().publish( topic, payload, qos, retain)
 
 
     def on_connect( self, client, userdata, flags, rc):
@@ -95,10 +104,10 @@ class Client( PahoClient):
 if __name__ == '__main__': # Demo code
 
     import sys
-    client = Client()
+    client = Client().connect( sys.argv[1] if len( sys.argv) > 1 else 'localhost')
     
     @client.topic( sys.argv[2] if len( sys.argv) > 2 else '#')
     def print_msg( client, userdata, msg):
         print( ("%s: %s" % (msg.topic, msg.payload))[:80])
     
-    client.run( sys.argv[1] if len( sys.argv) > 1 else 'localhost')
+    client.loop_forever()
