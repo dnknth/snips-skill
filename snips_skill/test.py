@@ -39,8 +39,8 @@ class TestRunner( skill.Skill):
     
     def on_connect( self, client, userdata, flags, rc):
         super().on_connect( client, userdata, flags, rc)
-        if self.tests:
-            self.start_session( self.options.site_id, self.action_init())
+        if not self.tests and not self.options.log_dir: sys.exit( 0)
+        self.start_session( self.options.site_id, self.action_init())
 
 
     def _on_start( self, client, userdata, msg):

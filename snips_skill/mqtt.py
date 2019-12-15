@@ -52,6 +52,7 @@ class Client( PahoClient):
             
         except KeyboardInterrupt:
             self.log.debug( "Shutting down")
+            self.disconnect()
         
         
     def topic( self, topic, qos=0, payload_converter=None):
@@ -87,7 +88,7 @@ class Client( PahoClient):
     def publish( self, topic, payload=None, qos=0, retain=False):
         "Send an MQTT message"
         self.log.debug( 'Publishing: %s', topic)
-        super().publish( topic, payload, qos, retain)
+        return super().publish( topic, payload, qos, retain)
 
 
     def on_connect( self, client, userdata, flags, rc):
@@ -102,12 +103,36 @@ class Client( PahoClient):
 
 
 if __name__ == '__main__': # Demo code
-
-    import sys
-    client = Client().connect( sys.argv[1] if len( sys.argv) > 1 else 'localhost')
     
-    @client.topic( sys.argv[2] if len( sys.argv) > 2 else '#')
+    from argparse import ArgumentParser
+    from getpass import getpass
+    
+    parser = ArgumentParser()
+    parser.add_argument( '-H', '--host', default='localhost',
+        help='MQTT host (default: localhost)')
+    parser.add_argument( '-P', '--port', default=Client.DEFAULT_PORT,
+        type=int, help='MQTT port (default: %d)' % Client.DEFAULT_PORT)
+    parser.add_argument( '-T', '--tls', action='store_true',
+        default=False, help='Use TLS')
+    parser.add_argument( '-u', '--username', nargs='?', help='User name')
+    parser.add_argument( '-p', '--password', action='store_true',
+        help='Prompt for password')
+    parser.add_argument( '-t', '--topic', default='#',
+        help='MQTT topic (default: #)')
+    parser.add_argument( '-z', '--clear', action='store_true',
+        help='Clear retained messages')
+    
+    options = parser.parse_args()
+    password = getpass() if options.username and options.password else None
+    port = Client.DEFAULT_TLS_PORT if options.tls \
+        and options.port == Client.DEFAULT_PORT else options.port
+    client = Client().connect( options.host, port,
+        options.username, password, use_tls=options.tls)
+    
+    @client.topic( options.topic)
     def print_msg( client, userdata, msg):
         print( ("%s: %s" % (msg.topic, msg.payload))[:80])
+        if options.clear and msg.retain and msg.payload:
+            client.publish( msg.topic, retain=True)
     
     client.loop_forever()
