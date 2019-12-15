@@ -42,7 +42,7 @@ class TestRunner( skill.Skill):
         super().on_connect( client, userdata, flags, rc)
         if not self.tests and not self.options.log_dir:
             self.log.info( "Nothing to do, exiting")
-            sys.exit()
+            self.disconnect()
         self.start_session( self.options.site_id, self.action_init())
 
 
@@ -65,7 +65,7 @@ class TestRunner( skill.Skill):
         self.log.debug( "Session ended: %s", msg.payload['sessionId'])
         if not self.tests and not self.options.log_dir:
             self.log.info( "No more tests, exiting")
-            sys.exit( self.failures)
+            self.disconnect()
         self.start_session( self.options.site_id, self.action_init())
 
         
@@ -110,9 +110,11 @@ class TestRunner( skill.Skill):
         except AssertionError as e:
             self.log.error( str( e))
             self.failures += 1
+            self.test = None
 
 
 if __name__ == '__main__':
 
     client = TestRunner().connect()
     client.loop_forever()
+    sys.exit( client.failures)
