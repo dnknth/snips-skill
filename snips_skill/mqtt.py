@@ -51,7 +51,9 @@ class Client( PahoClient):
             super().loop_forever()
             
         except KeyboardInterrupt:
-            self.log.debug( "Shutting down")
+            self.log.debug( "Interrupted by user")
+            
+        finally:
             self.disconnect()
         
         

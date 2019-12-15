@@ -1,6 +1,6 @@
 # snips-skill
 
-Helpers to simplify the development of [Snips](https://snips.ai) skills in Python.
+Helpers to simplify the development of [Snips](https://snips.ai) skills in Python3.
 
 ## Contents
  - `snips_skill.mqtt`: A thin wrapper around [paho-mqtt](https://www.eclipse.org/paho/clients/python/docs/)
@@ -11,7 +11,8 @@ Helpers to simplify the development of [Snips](https://snips.ai) skills in Pytho
 
 ## Modules
 
-You can run some modules with `python3 -m <module_name>`:
+You can run several modules with `python3 -m <module_name>`:
 
- - `snips_skill.mqtt`: Log MQTT messages 
+ - `snips_skill.mqtt`: Log MQTT messages
  - `snips_skill.skill`: Log parsed intents
+ - `snips_skill.test`: Execute scripted tests

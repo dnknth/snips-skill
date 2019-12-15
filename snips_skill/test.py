@@ -23,6 +23,7 @@ class TestRunner( skill.Skill):
 
         self.events = []
         self.tests = []
+        self.failures = 0
         for test_spec in self.options.tests:
             with test_spec:
                 self.tests.append( load( test_spec))
@@ -39,20 +40,32 @@ class TestRunner( skill.Skill):
     
     def on_connect( self, client, userdata, flags, rc):
         super().on_connect( client, userdata, flags, rc)
-        if not self.tests and not self.options.log_dir: sys.exit( 0)
+        if not self.tests and not self.options.log_dir:
+            self.log.info( "Nothing to do, exiting")
+            sys.exit()
         self.start_session( self.options.site_id, self.action_init())
 
 
     def _on_start( self, client, userdata, msg):
         if self.events: self._flush_log()
-        if self.tests: self.test = self.tests.pop( 0)
         self.session_id = msg.payload['sessionId']
+        self.log.debug( "Session started: %s", self.session_id)
+        if self.tests:
+            self.log.info( "Running test %s", self.session_id)
+            self.test = self.tests.pop( 0)
         self._handle( client, userdata, msg)
 
         
     def _on_end( self, client, userdata, msg):
         self._flush_log()
-        if not self.tests: sys.exit( 0)
+        if self.test:
+            self.log.error( "Test has %d remaining steps" % len( self.test))
+            self.failures += 1
+            
+        self.log.debug( "Session ended: %s", msg.payload['sessionId'])
+        if not self.tests and not self.options.log_dir:
+            self.log.info( "No more tests, exiting")
+            sys.exit( self.failures)
         self.start_session( self.options.site_id, self.action_init())
 
         
@@ -74,27 +87,32 @@ class TestRunner( skill.Skill):
             'payload': msg.payload })
             
         if not self.test: return
-        
         step = self.test.pop( 0)
-        assert 'event' in step, "Event missing in test specification"
-        assert step['event'] == msg.topic, "Expected: %s, received: %s" % (
-            step['event'], msg.topic)
-
-        if not 'action' in step or not step['action']: return
-        action = step['action']
         
-        if action == 'publish':
-            assert 'topic' in step, "Message topic is missing"
-            assert 'payload' in step, "Message payload is missing"
-            payload = step['payload']
-            payload['siteId'] = self.options.site_id
-            payload['sessionId'] = self.session_id
+        try:
+            assert 'event' in step, "Event missing in test specification"
+            assert step['event'] == msg.topic, "Expected: %s, received: %s" % (
+                step['event'], msg.topic)
+
+            if not 'action' in step or not step['action']: return
+            action = step['action']
+        
+            if action == 'publish':
+                assert 'topic' in step, "Message topic is missing"
+                assert 'payload' in step, "Message payload is missing"
+                payload = step['payload']
+                payload['siteId'] = self.options.site_id
+                payload['sessionId'] = self.session_id
             
-            self.test.insert( 0, { 'event': step['topic'] })
-            self.publish( step['topic'], dumps( payload))
+                self.test.insert( 0, { 'event': step['topic'] })
+                self.publish( step['topic'], dumps( payload))
+                
+        except AssertionError as e:
+            self.log.error( str( e))
+            self.failures += 1
 
 
-if __name__ == '__main__': # demo code
+if __name__ == '__main__':
 
     client = TestRunner().connect()
     client.loop_forever()

@@ -10,7 +10,7 @@ log:
 	.venv3/bin/python3 -m snips_skill.mqtt -H home
 
 test:
-	.venv3/bin/python3 -m snips_skill.test -s study -v3 tests/*.json
+	.venv3/bin/python3 -m snips_skill.test -s study tests/*.json
 
 .venv3: requirements.txt
 	[ -d $@ ] || python3 -m venv $@
