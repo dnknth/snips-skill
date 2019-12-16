@@ -1,7 +1,7 @@
 from argparse import FileType
 from json import dump, dumps, load
 from pathlib import Path
-import logging, sys
+import logging
 
 try:
     from . import skill, snips
@@ -114,6 +114,7 @@ class TestRunner( skill.Skill):
 
 
 if __name__ == '__main__':
+    import sys
 
     client = TestRunner().connect()
     client.loop_forever()

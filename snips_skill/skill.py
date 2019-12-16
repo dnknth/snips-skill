@@ -52,7 +52,8 @@ class Skill( snips.Client):
         self.add_arguments()
         
         self.options = self.parser.parse_args( args)
-        self.log.setLevel( self.LOG_LEVELS[ self.options.verbosity])
+        self.log_level = self.LOG_LEVELS[ self.options.verbosity]
+        self.log.setLevel( self.log_level)
         self.log.debug( 'Command line options: %s', self.options)
     
 
