@@ -108,6 +108,7 @@ if __name__ == '__main__': # Demo code
     
     from argparse import ArgumentParser
     from getpass import getpass
+    import shutil
     
     parser = ArgumentParser()
     parser.add_argument( '-H', '--host', default='localhost',
@@ -130,10 +131,11 @@ if __name__ == '__main__': # Demo code
         and options.port == Client.DEFAULT_PORT else options.port
     client = Client().connect( options.host, port,
         options.username, password, use_tls=options.tls)
+    columns = shutil.get_terminal_size().columns
     
     @client.topic( options.topic)
     def print_msg( client, userdata, msg):
-        print( ("%s: %s" % (msg.topic, msg.payload))[:80])
+        print( ("%s: %s" % (msg.topic, msg.payload))[:columns])
         if options.clear and msg.retain and msg.payload:
             client.publish( msg.topic, retain=True)
     
