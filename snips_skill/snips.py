@@ -148,6 +148,11 @@ class Client( mqtt.Client):
         self.publish( self.START_SESSION, dumps( payload), qos=qos)
 
 
+    def speak( self, site_id, text):
+        'Say a one-time notification'
+        self.start_session( site_id, self.notification_init( text))
+        
+
     # See: https://docs.snips.ai/reference/dialogue#end-session
     def end_session( self, session_id, text=None, qos=1):
         'End the session with an optional message'

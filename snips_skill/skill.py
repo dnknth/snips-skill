@@ -45,7 +45,7 @@ class Skill( snips.Client):
         logging.basicConfig()
         super().__init__()
 
-        self.parser = ArgumentParser()
+        self.parser = ArgumentParser( description=self.__doc__)
         self.parser.add_argument( '-v', '--verbosity',
             type=int, choices=[0, 1, 2, 3], default=self.DEFAULT_LOG_LEVEL,
             help='Logging verbosity: 0=errors only, 1=errors and warnings, 2=normal output, 3=debug output')

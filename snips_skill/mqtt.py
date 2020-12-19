@@ -29,6 +29,11 @@ class Client( PahoClient):
         self.log = logging.getLogger( self.__class__.__name__)
         self.log.setLevel( logging.WARNING)
 
+    def __enter__( self):
+        return self
+
+    def __exit__( self, *exc_info):
+        self.disconnect()
 
     def connect( self, host='localhost', port=DEFAULT_PORT,
             username=None, password=None,
@@ -129,9 +134,8 @@ if __name__ == '__main__': # Demo code
     password = getpass() if options.username and options.password else None
     port = Client.DEFAULT_TLS_PORT if options.tls \
         and options.port == Client.DEFAULT_PORT else options.port
-    client = Client().connect( options.host, port,
-        options.username, password, use_tls=options.tls)
     columns = shutil.get_terminal_size().columns
+    client = Client()
     
     @client.topic( options.topic)
     def print_msg( client, userdata, msg):
@@ -139,4 +143,6 @@ if __name__ == '__main__': # Demo code
         if options.clear and msg.retain and msg.payload:
             client.publish( msg.topic, retain=True)
     
-    client.loop_forever()
+    with client.connect( options.host, port,
+        options.username, password, use_tls=options.tls):
+        client.loop_forever()
