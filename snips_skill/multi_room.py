@@ -3,10 +3,10 @@ import gettext, os
 
 try:
     from . snips import SnipsError
-    from . i18n import gettext as _
+    from . i18n import _
 except ImportError:
     from snips import SnipsError
-    from i18n import gettext as _
+    from i18n import _
 
 
 class SnipsSiteError( SnipsError):
