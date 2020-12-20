@@ -75,11 +75,11 @@ class Skill( snips.Client):
                 slot.value)
 
 
-def log_intent( method):
+def log_intent( method, level=logging.DEBUG):
     @functools.wraps( method)
     def wrapped( client, userdata, msg):
         try:
-            client.log_intent( msg, level=logging.DEBUG, colorize=True)
+            client.log_intent( msg, level=level, colorize=True)
             return method( client, userdata, msg)
         except snips.SnipsError as e:
             client.end_session( msg.payload.session_id, str( e))
@@ -88,10 +88,9 @@ def log_intent( method):
 
 if __name__ == '__main__': # demo code
 
-    client = Skill().connect()
-
-    @client.on_intent( '#')
+    @snips.on_intent( '#')
     def print_msg( client, userdata, msg):
-        client.log_intent( msg, level=logging.INFO)
+        log_intent( msg, level=logging.INFO)
 
-    client.loop_forever()
+    with Skill().connect() as client:
+        client.loop_forever()

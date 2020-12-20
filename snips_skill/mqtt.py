@@ -17,6 +17,7 @@ class Client( PahoClient):
     WEBSOCKETS = "websockets"
     DEFAULT_PORT = 1883
     DEFAULT_TLS_PORT = 8883
+    SUBSCRIPTIONS = {}
     
 
     def __init__( self, client_id=None, clean_session=True, \
@@ -24,16 +25,18 @@ class Client( PahoClient):
 
         super().__init__( client_id, clean_session or not client_id,
             userdata, protocol, transport)
-        self._subscriptions = {}
         self._tls_initialized = False
         self.log = logging.getLogger( self.__class__.__name__)
         self.log.setLevel( logging.WARNING)
 
+
     def __enter__( self):
         return self
 
+
     def __exit__( self, *exc_info):
         self.disconnect()
+
 
     def connect( self, host='localhost', port=DEFAULT_PORT,
             username=None, password=None,
@@ -49,47 +52,19 @@ class Client( PahoClient):
         self.log.info( "Connected to MQTT broker: %s", host)
         return self
 
-    
+
+    def disconnect( self):
+        super().disconnect()
+        self.log.debug( "Disconnected from MQTT broker")
+
+        
     def loop_forever( self):
         "Wait for messages and invoke callbacks until interrupted"
         try:
             super().loop_forever()
             
         except KeyboardInterrupt:
-            self.log.debug( "Interrupted by user")
-            
-        finally:
-            self.disconnect()
-        
-        
-    def topic( self, topic, qos=0, payload_converter=None):
-        """ Decorator for callback functions.
-            Callbacks are invoked with two positional parameters:
-             - msg: MQTT message
-             - userdata: User-defined extra data
-            Return values are not expected.
-            :param topc: MQTT topic, may contain wildcards
-            :param qos: MQTT quality of service (default: 0)
-            :param payload_converter: unary function to transform the message payload
-        """
-        
-        assert topic not in self._subscriptions, \
-            "Topic '%s' is already registered" % topic
-        
-        def wrapper( method):
-            
-            @functools.wraps( method)
-            def wrapped( client, userdata, msg):
-                "Callback for the Paho MQTT client"
-                self.log.debug( 'Received message: %s', msg.topic)
-                if payload_converter: msg.payload = payload_converter( msg.payload)
-                
-                # User-provided callback
-                method( client, userdata, msg)
-
-            self._subscriptions[ topic] = (wrapped, qos)
-            return wrapped
-        return wrapper
+            self.log.info( "Interrupted by user")
         
         
     def publish( self, topic, payload=None, qos=0, retain=False):
@@ -103,11 +78,41 @@ class Client( PahoClient):
         
         assert rc == 0, "Connection failed"
 
-        for topic, (callback, qos) in self._subscriptions.items():
+        for topic, (callback, qos) in self.SUBSCRIPTIONS.items():
             self.subscribe( topic, qos)
             self.message_callback_add( topic, callback)
             self.log.debug( 'Subscribed to MQTT topic: %s', topic)
 
+
+def topic( topic, qos=0, payload_converter=None):
+    """ Decorator for callback functions.
+        Callbacks are invoked with two positional parameters:
+         - msg: MQTT message
+         - userdata: User-defined extra data
+        Return values are not expected.
+        :param topic: MQTT topic, may contain wildcards
+        :param qos: MQTT quality of service (default: 0)
+        :param payload_converter: unary function to transform the message payload
+    """
+    
+    assert topic not in Client.SUBSCRIPTIONS, \
+        "Topic '%s' is already registered" % topic
+    
+    def wrapper( method):
+        
+        @functools.wraps( method)
+        def wrapped( client, userdata, msg):
+            "Callback for the Paho MQTT client"
+            client.log.debug( 'Received message: %s', msg.topic)
+            if payload_converter: msg.payload = payload_converter( msg.payload)
+            
+            # User-provided callback
+            method( client, userdata, msg)
+
+        Client.SUBSCRIPTIONS[ topic] = (wrapped, qos)
+        return wrapped
+    return wrapper
+        
 
 if __name__ == '__main__': # Demo code
     
@@ -137,7 +142,7 @@ if __name__ == '__main__': # Demo code
     columns = shutil.get_terminal_size().columns
     client = Client()
     
-    @client.topic( options.topic)
+    @topic( options.topic)
     def print_msg( client, userdata, msg):
         print( ("%s: %s" % (msg.topic, msg.payload))[:columns])
         if options.clear and msg.retain and msg.payload:

@@ -85,30 +85,6 @@ class Client( mqtt.Client):
             username=username, password=password)
 
 
-    def on_session_started( self, qos=1, payload_converter=parse_json):
-        'Decorator for session start handlers'
-        return self.topic( self.SESSION_STARTED, qos=qos,
-            payload_converter=payload_converter)
-
-
-    def on_session_ended( self, qos=1, payload_converter=parse_json):
-        'Decorator for session end handlers'
-        return self.topic( self.SESSION_ENDED, qos=qos,
-            payload_converter=payload_converter)
-
-
-    def on_intent( self, intent, qos=1, payload_converter=intent.parse_intent):
-        'Decorator for intent handlers'
-        return self.topic( '%s/%s' % (self.INTENT, intent), qos=qos,
-            payload_converter=payload_converter)
-
-
-    def on_intent_not_recognized( self, qos=1, payload_converter=parse_json):
-        'Decorator for unknown intent handlers'
-        return self.topic( self.INTENT_NOT_RECOGNIZED, qos=qos,
-            payload_converter=payload_converter)
-
-
     # See: https://docs.snips.ai/reference/dialogue#session-initialization-action
     def action_init( self, text=None, intent_filter=[],
             can_be_enqueued=True, send_intent_not_recognized=False):
@@ -198,21 +174,28 @@ class Client( mqtt.Client):
         return request_id
 
 
-def debug_json( keys=[]):
-    'Decorator to debug message payloads'
+def on_session_started( qos=1, payload_converter=parse_json):
+    'Decorator for session start handlers'
+    return mqtt.topic( Client.SESSION_STARTED, qos=qos,
+        payload_converter=payload_converter)
 
-    def wrapper( method):
-        @functools.wraps( method)
-        def wrapped( client, userdata, msg):
-            if type( msg.payload) is dict:
-                data = msg.payload
-                if keys: data = { k: v for k, v in data.items()
-                    if not keys or k in keys }
-                client.log.debug( 'Payload: %s',
-                    dumps( data, sort_keys=True, indent=2))
-            return method( client, userdata, msg)
-        return wrapped
-    return wrapper
+
+def on_session_ended( qos=1, payload_converter=parse_json):
+    'Decorator for session end handlers'
+    return mqtt.topic( Client.SESSION_ENDED, qos=qos,
+        payload_converter=payload_converter)
+
+
+def on_intent( intent, qos=1, payload_converter=intent.parse_intent):
+    'Decorator for intent handlers'
+    return mqtt.topic( '%s/%s' % (Client.INTENT, intent), qos=qos,
+        payload_converter=payload_converter)
+
+
+def on_intent_not_recognized( qos=1, payload_converter=parse_json):
+    'Decorator for unknown intent handlers'
+    return mqtt.topic( Client.INTENT_NOT_RECOGNIZED, qos=qos,
+        payload_converter=payload_converter)
 
 
 def end_on_error( method):
@@ -238,3 +221,20 @@ def end_session( method):
         client.end_session( msg.payload.session_id, 
             method( client, userdata, msg))
     return end_on_error( wrapped)
+
+
+def debug_json( keys=[]):
+    'Decorator to debug message payloads'
+
+    def wrapper( method):
+        @functools.wraps( method)
+        def wrapped( client, userdata, msg):
+            if type( msg.payload) is dict:
+                data = msg.payload
+                if keys: data = { k: v for k, v in data.items()
+                    if not keys or k in keys }
+                client.log.debug( 'Payload: %s',
+                    dumps( data, sort_keys=True, indent=2))
+            return method( client, userdata, msg)
+        return wrapped
+    return wrapper
