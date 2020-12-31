@@ -1,121 +1,169 @@
-from argparse import FileType
-from json import dump, dumps, load
+from argparse import ArgumentTypeError, FileType
+from colors import red, green, yellow, blue, magenta, cyan
+from datetime import datetime
 from pathlib import Path
-import logging
+import json, logging
 
-try:
-    from . import skill, snips
-except ImportError:
-    import skill, snips
+from . logging import LoggingMixin
+from . mqtt import *
+from . snips import *
 
 
-class TestRunner( skill.Skill):
+class TestRunner( CommandLineMixin, LoggingMixin, SnipsClient):
+    'Record Snips sessions and play them back'
 
-    def __init__( self, args=None):
-
-        self.test = None
-        super().__init__( args)
+    def __init__( self):
+        super().__init__()
+        self.parse_args()
         
-        self.on_session_started()( self._on_start)
-        for event in ('%s/#' % self.INTENT, self.CONTINUE_SESSION, self.END_SESSION):
-            self.topic( event, payload_converter=snips.parse_json)( self._handle)
-        self.on_session_ended()( self._on_end)
-
+        self.test = None
         self.events = []
-        self.tests = []
         self.failures = 0
-        for test_spec in self.options.tests:
-            with test_spec:
-                self.tests.append( load( test_spec))
-
+        
 
     def add_arguments( self):
-        self.parser.add_argument( '-l', '--log-dir',
+        super().add_arguments()
+        self.parser.add_argument( '-d', '--log-dir',
             type=Path, nargs='?', help='Directory to log JSON messages')
-        self.parser.add_argument( '-s', '--site-id',
-            default='test', help='Site ID (default: test)')
-        self.parser.add_argument( 'tests', nargs='*', type=FileType('r'),
+        self.parser.add_argument( '-i', '--ignore-text', action='store_true',
+            help='Do not compare TTS message texts')
+        self.parser.add_argument( '-l', '--loop', action='store_true',
+            help='Keep recording until interrupted')
+        self.parser.add_argument( 'tests', nargs='*', type=self._json_file,
             metavar='JSON_TEST', help='JSON test spec')
-            
     
+         
+    def _json_file( self, path):
+        if Path( path).suffix != '.json':
+            raise ArgumentTypeError( '%s is not a JSON file' % path) 
+        return FileType('r')( path)
+    
+        
     def on_connect( self, client, userdata, flags, rc):
         super().on_connect( client, userdata, flags, rc)
-        if not self.tests and not self.options.log_dir:
-            self.log.info( "Nothing to do, exiting")
-            self.disconnect()
-        self.start_session( self.options.site_id, self.action_init())
-
-
-    def _on_start( self, client, userdata, msg):
-        if self.events: self._flush_log()
-        self.session_id = msg.payload['sessionId']
-        self.log.debug( "Session started: %s", self.session_id)
-        if self.tests:
-            self.log.info( "Running test %s", self.session_id)
-            self.test = self.tests.pop( 0)
-        self._handle( client, userdata, msg)
-
         
-    def _on_end( self, client, userdata, msg):
-        self._flush_log()
-        if self.test:
-            self.log.error( "Test has %d remaining steps" % len( self.test))
-            self.failures += 1
-            
-        self.log.debug( "Session ended: %s", msg.payload['sessionId'])
-        if not self.tests and not self.options.log_dir:
-            self.log.info( "No more tests, exiting")
-            self.disconnect()
-        self.start_session( self.options.site_id, self.action_init())
-
+        if self.options.log_dir: # Start recording
+            if not self.options.log_dir.is_dir():
+                self.log.error( 'No such directory: %s', self.options.log_dir)
+                return self._exit()
+            self.log.info( 'Waiting for session...')
         
-    def _flush_log( self):
-        if self.events and self.options.log_dir:
-            path = self.options.log_dir / ('%s.json' % self.session_id)
-            self.log.info( "Logging session to %s", path)
-            with open( path, 'w') as out:
-                dump( self.events, out,
-                    ensure_ascii=False, sort_keys=True, indent=2)
-        self.events = []
+        elif self.options.tests: self._start_session()
+        else: self._exit( 'Nothing to do, exiting')
+
+    
+    def _start_session( self):
+        with self.options.tests.pop( 0) as test:
+            self.test = json.load( test)
+        site_id = self.test[0].get( 'payload', {}).get( 'siteId')
+        self.start_session( site_id, self.action_init())
 
 
-    def _handle( self, client, userdata, msg):
-        self.events.append( {
-            'event': None,
-            'action': None,
-            'topic': msg.topic,
-            'payload': msg.payload })
-            
-        if not self.test: return
-        step = self.test.pop( 0)
-        
+    @on_session_started()
+    def _on_start( self, userdata, msg):
+        if self.options.log_dir: return # Recording
+
         try:
-            assert 'event' in step, "Event missing in test specification"
-            assert step['event'] == msg.topic, "Expected: %s, received: %s" % (
-                step['event'], msg.topic)
+            self.session_id = msg.payload.get( 'sessionId')
+            self.log.debug( 'Session started: %s', self.session_id)
+    
+            assert self.test, 'No test steps remaining'
+            step = self.test[0]
 
-            if not 'action' in step or not step['action']: return
-            action = step['action']
-        
-            if action == 'publish':
-                assert 'topic' in step, "Message topic is missing"
-                assert 'payload' in step, "Message payload is missing"
-                payload = step['payload']
-                payload['siteId'] = self.options.site_id
-                payload['sessionId'] = self.session_id
+            topic = step.get( 'topic')
+            assert topic, 'Message topic is missing'
+            assert topic.startswith( self.INTENT_PREFIX), \
+                'Intent expected, but got: %s' % topic
+
+            payload = step.get( 'payload')
+            assert payload, 'Message payload is missing'
+            payload['sessionId'] = self.session_id
+
+            self.log.info( 'Starting test %s with %d steps',
+                step.get('time'), len( self.test))
+            self.publish( topic, json.dumps( payload))
+            return
             
-                self.test.insert( 0, { 'event': step['topic'] })
-                self.publish( step['topic'], dumps( payload))
-                
         except AssertionError as e:
-            self.log.error( str( e))
-            self.failures += 1
-            self.test = None
+            self._fail( e)    
+        self._exit()
+
+
+    @on_intent('#', log_level=None)
+    @on_continue_session( log_level=None)
+    @on_end_session( log_level=None)
+    def _handle( self, userdata, msg):
+        self.log.debug( 'Received message: %s', msg.topic)
+        if self.options.log_dir:
+            self.events.append( {
+                'time': datetime.now().isoformat(),
+                'topic': msg.topic,
+                'payload': msg.payload })
+            return
+
+        # Ignore other sessions that are unrelated to the current test
+        if msg.payload and msg.payload.get( 'sessionId') != self.session_id:
+            return
+
+        try:
+            assert self.test, 'Test has already finished'
+            step = self.test.pop( 0)
+            topic = step.get( 'topic')
+            assert topic, 'Test topic is missing'
+            self.log.debug( 'Test step: %s', topic)
+            
+            assert topic == msg.topic, \
+                'Expected topic: %s, received: %s' % (topic, msg.topic)
+
+            payload = step.get( 'payload')
+            assert payload, 'Test payload is missing'
+            
+            text = msg.payload.get( 'text')
+            assert (self.options.ignore_text or payload.get('text') == text), \
+                'Expected text: %s, received: %s' % (payload.get('text'), text)
+
+            if topic.startswith( self.INTENT_PREFIX):
+                self.tabular_log( logging.INFO, 'intent', topic, label_color=green)
+            else: self.tabular_log( logging.INFO, 'topic', topic, label_color=cyan)
+            if text: self.tabular_log( logging.INFO, 'text', text, label_color=cyan)
+            
+        except AssertionError as e: self._fail( e)
+
+
+    @on_session_ended()
+    def _on_end( self, userdata, msg):
+        if self.test:
+            self._fail( 'Test has %d remaining steps' % len( self.test))
+        self.log.debug( 'Session ended: %s', msg.payload['sessionId'])
+        if self.options.tests: self._start_session()
+        else: self._exit()
+
+
+    def _fail( self, e):
+        self.colored_log( logging.ERROR, '%s', e, color=red)
+        self.failures += 1
+        self.test = None
+
+
+    def _exit( self, msg='Exiting'):
+        if self.events:
+            event = self.events[0]
+            intent = event['topic'].replace( self.INTENT_PREFIX, '')
+            file_name = '%s-%s.json' % ( event['time'], intent)
+            path = self.options.log_dir / file_name
+            self.log.info( 'Logging session to %s', path)
+            with open( path, 'w') as out:
+                json.dump( self.events, out, ensure_ascii=False, indent=2)
+            self.events = []
+            
+        if not (self.options.log_dir and self.options.loop):
+            self.log.debug( msg)
+            self.disconnect()
 
 
 if __name__ == '__main__':
     import sys
 
-    client = TestRunner().connect()
-    client.loop_forever()
+    client = TestRunner()
+    client.run()
     sys.exit( client.failures)

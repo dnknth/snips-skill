@@ -2,5 +2,5 @@ __pycache__
 .venv*
 *.egg-info
 build
-*.mo
+dist
 tests

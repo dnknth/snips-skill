@@ -1,96 +1,126 @@
-from argparse import ArgumentParser
-import functools
-import gettext, logging, os
-
-try:
-    from . import snips
-except ImportError:
-    import snips
-
-
-BLUE      = '\033[94m'
-GREEN     = '\033[92m'
-PURPLE    = '\033[95m'
-RED       = '\033[91m'
-YELLOW    = '\033[93m'
-
-BOLD      = '\033[1m'
-ENDC      = '\033[0m'
+from . exceptions import SnipsError, SnipsClarificationError
+from . i18n import _
+from . intent import IntentPayload
+from . logging import LoggingMixin
+from . mqtt import CommandLineMixin
+from . snips import SnipsClient, on_intent
+from configparser import ConfigParser
+from functools import wraps
+import json, logging, os, sys
 
 
-def _colorize( color, msg, colored=True):
-    "Colorize a string for xterm"
-    if not colored: return msg
-    return color + msg + ENDC
+__all__ = ( 'Skill', 'intent', 'min_confidence', 'PARDON', 'require_slot' )
+
+
+class Skill( LoggingMixin, CommandLineMixin, SnipsClient):
+    'Base class for Snips actions.'
     
-
-class Skill( snips.Client):
-    """
-        Base class for Snips actions.
-        Sets up logging and provides some skeleton methods for sub-classes.
-    """
+    CONFIGURATION_FILE = 'config.ini'
     
-    # Map verbosity argument choices to log levels
-    LOG_LEVELS = {
-        0: logging.ERROR,
-        1: logging.WARNING,
-        2: logging.INFO,
-        3: logging.DEBUG,
-    }
+    STANDARD_SECTIONS = ('DEFAULT', 'global', 'secret')
     
-    DEFAULT_LOG_LEVEL = 2
-
-
-    def __init__( self, args=None):
-        logging.basicConfig()
+    
+    def __init__( self):
         super().__init__()
+        self.parse_args()
+        self.configuration = ConfigParser()
 
-        self.parser = ArgumentParser( description=self.__doc__)
-        self.parser.add_argument( '-v', '--verbosity',
-            type=int, choices=[0, 1, 2, 3], default=self.DEFAULT_LOG_LEVEL,
-            help='Logging verbosity: 0=errors only, 1=errors and warnings, 2=normal output, 3=debug output')
-        self.add_arguments()
+        if os.path.isfile( self.options.config):
+            self.log.debug( 'Reading configuration: %s', self.options.config)
+            self.configuration.read( self.options.config, encoding='UTF-8')
+            self.process_config()
+        else:
+            self.log.warning( 'Configuration %s not found', self.options.config)
+
         
-        self.options = self.parser.parse_args( args)
-        self.log_level = self.LOG_LEVELS[ self.options.verbosity]
-        self.log.setLevel( self.log_level)
-        self.log.debug( 'Command line options: %s', self.options)
-    
+    def process_config( self):
+        'May be overridden'
+        pass
+
+
+    def get_config( self, section='DEFAULT'):
+        'Get a configuration section, or DEFAULT values'
+        if section in self.configuration:
+            return self.configuration[ section]
+        return self.configuration[ 'DEFAULT']
+
 
     def add_arguments( self):
-        "Hook for subclasses to add additional command line options"
-        pass
-        
-        
-    def log_intent( self, msg, level=logging.DEBUG, colorize=True):
-        "Log an intent message for debugging"
-        
-        self.log.log( level, '%s %s', _colorize( BLUE, 'intent'.ljust( 8), colorize),
-            _colorize( BOLD + GREEN, msg.payload.intent.intent_name, colorize))
-        for k in ('site_id', 'input'):
-            self.log.log( level, '%s %s', _colorize( BLUE, k.ljust( 8), colorize),
-                getattr( msg.payload, k))
-        for name, slot in msg.payload.slots.items():
-            self.log.log( level, '%s %s', _colorize( PURPLE, name.ljust( 8), colorize),
-                slot.value)
+        super().add_arguments()
+        self.parser.add_argument( '-c', '--config',
+            default=self.CONFIGURATION_FILE,
+            help='Configuration file (%s)' % self.CONFIGURATION_FILE)
+    
+    
+def intent( intent, qos=1, log_level=logging.DEBUG, silent=False):
+    ''' Decorator for intent handlers.
+        :param intent: Intent name.
+        :param qos: MQTT quality of service.
+        :param log_level: Log intents at this level, if set.
+        :param silent: Set to `True` for intents that should return `None` 
+        The wrapped function gets a parsed `IntentPayload` object
+        instead of a JSON `msg.payload`.
+        If a `SnipsClarificationError` is raised, the session continues with a question.
+        Otherwise, the session is ended.
+    '''
+
+    def wrapper( method):
+        @on_intent( intent, qos=qos, log_level=logging.DEBUG)
+        @wraps( method)
+        def wrapped( client, userdata, msg):
+            msg.payload = IntentPayload( msg.payload)
+            if log_level: client.log_intent( msg.payload, level=log_level)
+            try:
+                result = method( client, userdata, msg)
+                if result is None and silent:
+                    client.end_session( msg.payload.session_id, qos=qos)
+                    return
+                raise SnipsError( result)
+                if log_level: client.log_response( result, level=log_level)
+            except SnipsClarificationError as sce:
+                if log_level: client.log_response( sce, level=log_level)
+                client.continue_session( msg.payload.session_id, str( sce),
+                    [ sce.intent ] if sce.intent else None,
+                    slot=sce.slot, custom_data=sce.custom_data)
+            except SnipsError as e:
+                if log_level: client.log_response( e, level=log_level)
+                client.end_session( msg.payload.session_id, str( e), qos=qos)
+        return wrapped
+    return wrapper
 
 
-def log_intent( method, level=logging.DEBUG):
-    @functools.wraps( method)
-    def wrapped( client, userdata, msg):
-        try:
-            client.log_intent( msg, level=level, colorize=True)
-            return method( client, userdata, msg)
-        except snips.SnipsError as e:
-            client.end_session( msg.payload.session_id, str( e))
-    return wrapped
+PARDON = _('Pardon?')
+
+def min_confidence( threshold, prompt=PARDON):
+    ''' Decorator that requires a minimum intent confidence, or else asks the user.
+        :param threshold: Minimum confidence (0.0 - 1.0)
+        :param prompt: Question for the user
+    '''
+
+    def wrapper( method):
+        @wraps( method)
+        def wrapped( client, userdata, msg):
+            if msg.payload.intent.confidence_score >= threshold:
+                return method( client, userdata, msg)
+            raise SnipsClarificationError( prompt)
+        return wrapped
+    return wrapper
 
 
-if __name__ == '__main__': # demo code
+def require_slot( slot, prompt, kind=None):
+    ''' Decorator that checks whether a slot is present, or else asks the user.
+        :param slot: Slot name
+        :param prompt: Question for the user
+        :param kind: Optionally, the slot is expected to be of the given kind.
+    '''
 
-    @snips.on_intent( '#')
-    def print_msg( client, userdata, msg):
-        log_intent( msg, level=logging.INFO)
-
-    with Skill().connect() as client:
-        client.loop_forever()
+    def wrapper( method):
+        @wraps( method)
+        def wrapped( client, userdata, msg):
+            if slot in msg.payload.slots and (kind is None
+                or msg.payload.slot_values[slot].kind == kind):
+                    return method( client, userdata, msg)
+            raise SnipsClarificationError( prompt,
+                msg.payload.intent.intent_name, slot)
+        return wrapped
+    return wrapper

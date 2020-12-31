@@ -1,60 +1,50 @@
 #!/usr/bin/env python3
 
-import functools
-from json import dumps, loads
-import toml
-import uuid
-
-try:
-    from . import intent
-    from . import mqtt
-except ImportError:
-    import intent, mqtt
+from . mqtt import MqttClient, MQTTv311, topic
+from functools import partial, wraps
+import io, json, logging, toml, uuid, wave
 
 
-class SnipsError( Exception):
-    'Signal that an intent cannot be handled'
-    pass
+__all__ = ( 'SnipsClient', 'debug_json',
+    'on_hotword_detected', 'on_start_session', 'on_session_started', 'on_intent',
+    'on_end_session', 'on_continue_session', 'on_session_ended', 'on_play_finished' )
 
 
-def parse_json( payload):
-    'parse msg.payload as JSON'
-    return loads( payload.decode())
-    
-
-class Client( mqtt.Client):
-    "Snips client with auto-configuration"
+class SnipsClient( MqttClient):
+    'Snips client with auto-configuration'
     
     CONFIG = '/etc/snips.toml'
     
-    INTENT   = 'hermes/intent'
-    DIALOGUE = 'hermes/dialogueManager/'
+    INTENT_PREFIX         = 'hermes/intent/'
+    DIALOGUE              = 'hermes/dialogueManager/'
     
     # Session life cycle messages
+    HOTWORD_DETECTED      = 'hermes/hotword/+/detected'
     START_SESSION         = DIALOGUE + 'startSession'
     SESSION_STARTED       = DIALOGUE + 'sessionStarted'
-    INTENT_NOT_RECOGNIZED = DIALOGUE + 'intentNotRecognized'
     CONTINUE_SESSION      = DIALOGUE + 'continueSession'
     END_SESSION           = DIALOGUE + 'endSession'
     SESSION_ENDED         = DIALOGUE + 'sessionEnded'
     
     # Misc
-    PLAY_BYTES = 'hermes/audioServer/{site_id}/playBytes/{request_id}'
+    PLAY_BYTES     = 'hermes/audioServer/{site_id}/playBytes/{request_id}'
+    PLAY_FINISHED  = 'hermes/audioServer/%s/playFinished'
+    REGISTER_SOUND = 'hermes/tts/registerSound/%s'
 
 
     def __init__( self, config=CONFIG, 
         client_id=None, clean_session=True, userdata=None,
-        protocol=mqtt.MQTTv311, transport=mqtt.Client.TCP):
+        protocol=MQTTv311, transport=MqttClient.TCP):
         
         super().__init__( client_id, clean_session, userdata,
             protocol, transport)
 
-        self.log.debug( "Loading config: %s", config)        
+        self.log.debug( 'Loading config: %s', config)        
         self.config = toml.load( config)
 
         
     def connect( self):
-        "Connect to the MQTT broker and invoke callback methods"
+        'Connect to the MQTT broker and invoke callback methods'
         common = self.config.get( 'snips-common', {})
         
         host, port = None, None
@@ -77,7 +67,7 @@ class Client( mqtt.Client):
         
         if cafile or cert or port == self.DEFAULT_TLS_PORT:
             assert not common.get( 'mqtt_tls_hostname'), \
-                "mqtt_tls_hostname not supported"
+                'mqtt_tls_hostname not supported'
             self.tls_set( ca_certs=cafile, certfile=cert, keyfile=key)
             self._tls_initialized = True
         
@@ -90,38 +80,32 @@ class Client( mqtt.Client):
             can_be_enqueued=True, send_intent_not_recognized=False):
         'Build the init part of action type to start a session'
         
-        init = { "type" : "action" }
-        if text: init[ "text"] = str( text)
-        if not can_be_enqueued: init[ "canBeEnqueued"] = False
-        if intent_filter: init[ "intentFilter"] = intent_filter
-        if send_intent_not_recognized: init[ "sendIntentNotRecognized"] = True
+        init = { 'type' : 'action' }
+        if text: init[ 'text'] = str( text)
+        if not can_be_enqueued: init[ 'canBeEnqueued'] = False
+        if intent_filter: init[ 'intentFilter'] = intent_filter
+        if send_intent_not_recognized: init[ 'sendIntentNotRecognized'] = True
         return init
 
 
     # See: https://docs.snips.ai/reference/dialogue#session-initialization-notification
     def notification_init( self, text):
         'Build the init part of notification type to start a session'
-        return {
-            "type" : "notification",
-            "text" : str( text)
-        }
+        return { 'type' : 'notification', 'text' : str( text) }
 
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
     def start_session( self, site_id, init, custom_data=None, qos=1):
         'End the session with an optional message'
-        payload = {
-            'siteId': site_id,
-            'init' : init
-        }
+        payload = { 'siteId': site_id, 'init' : init }
         
         if type( custom_data) in (dict, list, tuple):
-            payload[ 'customData'] = dumps( custom_data)
+            payload[ 'customData'] = json.dumps( custom_data)
         elif custom_data is not None:
             payload[ 'customData'] = str( custom_data)
             
         self.log.debug( "Starting %s session on site '%s'", init.get( 'type'), site_id)
-        self.publish( self.START_SESSION, dumps( payload), qos=qos)
+        self.publish( self.START_SESSION, json.dumps( payload), qos=qos)
 
 
     def speak( self, site_id, text):
@@ -137,12 +121,9 @@ class Client( mqtt.Client):
         if text:
             text = ' '.join( text.split())
             payload[ 'text'] = text
-            self.log.debug( "Ending session %s with message: %s",
-                session_id, text)
-                
-        else: self.log.debug( "Ending session %s", session_id)
-            
-        self.publish( self.END_SESSION, dumps( payload), qos=qos)
+
+        self.log.debug( "Ending session %s with '%s'", session_id, text)
+        self.publish( self.END_SESSION, json.dumps( payload), qos=qos)
 
 
     # See: https://docs.snips.ai/reference/dialogue#continue-session
@@ -158,12 +139,12 @@ class Client( mqtt.Client):
             payload[ 'sendIntentNotRecognized'] = bool( send_intent_not_recognized)
 
         if type( custom_data) in (dict, list, tuple):
-            payload[ 'customData'] = dumps( custom_data)
+            payload[ 'customData'] = json.dumps( custom_data)
         elif custom_data is not None:
             payload[ 'customData'] = str( custom_data)
 
-        self.log.debug( "Continuing session %s with message: %s", session_id, text)
-        self.publish( self.CONTINUE_SESSION, dumps( payload), qos=qos)
+        self.log.debug( "Continuing session %s with '%s'", session_id, text)
+        self.publish( self.CONTINUE_SESSION, json.dumps( payload), qos=qos)
 
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
@@ -174,67 +155,64 @@ class Client( mqtt.Client):
         return request_id
 
 
-def on_session_started( qos=1, payload_converter=parse_json):
-    'Decorator for session start handlers'
-    return mqtt.topic( Client.SESSION_STARTED, qos=qos,
-        payload_converter=payload_converter)
+    def register_sound( self, name, wav_data):
+        self.publish( self.REGISTER_SOUND % name, wav_data)
+        return self
 
 
-def on_session_ended( qos=1, payload_converter=parse_json):
-    'Decorator for session end handlers'
-    return mqtt.topic( Client.SESSION_ENDED, qos=qos,
-        payload_converter=payload_converter)
+    def run( self):
+        'Connect to MQTT and handle incoming messages'
+        with self.connect(): self.loop_forever()
 
 
-def on_intent( intent, qos=1, payload_converter=intent.parse_intent):
-    'Decorator for intent handlers'
-    return mqtt.topic( '%s/%s' % (Client.INTENT, intent), qos=qos,
-        payload_converter=payload_converter)
+###################################
+### Decorators for Snips events ###
+###################################
 
-
-def on_intent_not_recognized( qos=1, payload_converter=parse_json):
-    'Decorator for unknown intent handlers'
-    return mqtt.topic( Client.INTENT_NOT_RECOGNIZED, qos=qos,
-        payload_converter=payload_converter)
-
-
-def end_on_error( method):
-    "Decorator to end a session on SnipsError."
+def _load_json( payload):
+    'Helper to convert JSON to a Python dict'
+    # Only convert if this appears to be a JSON payload.
+    # Needed for multiple annotations on a method
+    return json.loads( payload) if type( payload) is bytes else payload
     
-    @functools.wraps( method)
-    def wrapped( client, userdata, msg):
-        try:
-            return method( client, userdata, msg)
-        except SnipsError as e:
-            client.end_session( msg.payload.session_id, str( e))
-    return wrapped
+on_hotword_detected = partial( topic,
+    SnipsClient.HOTWORD_DETECTED, payload_converter=_load_json)
 
+on_start_session = partial( topic,
+    SnipsClient.START_SESSION, payload_converter=_load_json)
 
-def end_session( method):
-    """
-        Decorator to end a session with an optional message.
-        The decorated function should either return a string, or throw a SnipsError.
-    """
-    
-    @functools.wraps( method)
-    def wrapped( client, userdata, msg):
-        client.end_session( msg.payload.session_id, 
-            method( client, userdata, msg))
-    return end_on_error( wrapped)
+def on_intent( intent, qos=0, log_level=logging.DEBUG):
+ return topic( '%s%s' % (SnipsClient.INTENT_PREFIX, intent),
+     qos=qos, payload_converter=_load_json, log_level=log_level)
+
+on_continue_session = partial( topic,
+    SnipsClient.CONTINUE_SESSION, payload_converter=_load_json)
+
+on_session_started = partial( topic,
+    SnipsClient.SESSION_STARTED, payload_converter=_load_json)
+
+on_end_session = partial( topic,
+    SnipsClient.END_SESSION, payload_converter=_load_json)
+
+on_session_ended = partial( topic,
+    SnipsClient.SESSION_ENDED, payload_converter=_load_json)
+
+def on_play_finished( site='+', qos=0, log_level=logging.DEBUG):
+    return topic( SnipsClient.PLAY_FINISHED % site,
+        qos=qos, payload_converter=_load_json, log_level=log_level)
 
 
 def debug_json( keys=[]):
-    'Decorator to debug message payloads'
-
+    'Decorator to debug message payjson.loads'
     def wrapper( method):
-        @functools.wraps( method)
+        @wraps( method)
         def wrapped( client, userdata, msg):
             if type( msg.payload) is dict:
                 data = msg.payload
                 if keys: data = { k: v for k, v in data.items()
                     if not keys or k in keys }
                 client.log.debug( 'Payload: %s',
-                    dumps( data, sort_keys=True, indent=2))
+                    json.dumps( data, sort_keys=True, indent=2))
             return method( client, userdata, msg)
         return wrapped
     return wrapper

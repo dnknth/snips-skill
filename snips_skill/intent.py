@@ -4,6 +4,9 @@ import json
 from datetime import datetime, timedelta
 
 
+__all__ = ('IntentPayload',)
+
+
 def parse_date( date_str):
     'Convert a Snips date string to datetime'
     date_str = date_str[:19] + date_str[-7:-3] + date_str[-2:]
@@ -130,11 +133,10 @@ class IntentPayload:
         self.site_id = json_dict[ 'siteId']
 
         custom_data = json_dict.get( 'customData')
-        if custom_data is not None:
-            try:
-                self.custom_data = json.loads( custom_data)
-            except:
-                self.custom_data = custom_data
+        try:
+            self.custom_data = json.loads( custom_data)
+        except:
+            self.custom_data = custom_data
         
         self.asr_tokens = json_dict.get( 'asrTokens')
         self.asr_confidence = json_dict.get( 'asrConfidence')
@@ -145,9 +147,3 @@ class IntentPayload:
 
     def __repr__( self):
         return "<%s %s>" % (self.intent, list( self.slots))
-
-
-def parse_intent( payload):
-    'Parse intent data as objects'
-    if type( payload) is bytes: payload = json.loads( payload)
-    return IntentPayload( payload)

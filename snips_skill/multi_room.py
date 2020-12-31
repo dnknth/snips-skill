@@ -1,81 +1,78 @@
-import configparser
-import gettext, os
-
-try:
-    from . snips import SnipsError
-    from . i18n import _
-except ImportError:
-    from snips import SnipsError
-    from i18n import _
+from . exceptions import SnipsError, SnipsClarificationError
+from . i18n import *
 
 
-class SnipsSiteError( SnipsError):
-    'Complain about unknown room names or site IDs'
-    pass
+__all__ = ('MultiRoomConfig', 'ROOMS', 'room_with_article', 'room_with_preposition')
 
 
 class MultiRoomConfig:
+    ''' Mixin for multi-site actions.
+        Contains helper methods to extract location slots,
+        look up room names, associated configuration and site IDs.
+    '''
     
-    PREPOSITIONS = {
-        # Map translated room names to room names with prepositions
-        # for languages that use genders for room names
-        _("bathroom").lower():    _("in the bathroom"),
-        _("bedroom").lower():     _("in the bedroom"),
-        _("dining room").lower(): _("in the dining room"),
-        _("livingroom").lower():  _("in the livingroom"),
-        _("kid's room").lower():  _("in the kid's room"),
-        _("kitchen").lower():     _("in the kitchen"),
-        _("office").lower():      _("in the office"),
-    }
+    DEFAULT_ROOM_NAMES = (
+        _('here'),
+        _('this room'),
+    )
     
-    
-    def __init__( self, configuration_file='config.ini', prepositions={}):
-        self.config = configparser.ConfigParser()
-        self.config.read( configuration_file, encoding='utf-8')
+    LOCATION_SLOT = None # Override as needed, e.g. 'room'
+
+
+    def process_config( self):
+        'Load all non-standard config sections as rooms'
+        self.sites = { self.configuration[section]['site_id'] : section
+            for section in self.configuration
+            if section not in self.STANDARD_SECTIONS
+                and 'site_id' in self.configuration[section] }
+
+
+    def add_room_name( self, room, with_article, with_preposition):
+        'Register additional room names with articles and prepositions'
+        ROOMS[room.lower()] = RoomName( with_article, with_preposition)
+
+
+    def get_room( self, payload):
+        'Get the recognized room name'
         
-        self.config.sites = { self.config[section]['site_id'] : section
-            for section in self.config if section != 'DEFAULT' }
-            
-        self.PREPOSITIONS.update( (k.lower, v)
-            for k, v in prepositions.items())
+        default_room = room = self.sites.get( payload.site_id)
+        assert self.LOCATION_SLOT, 'self.LOCATION_SLOT is undefined'
+        if self.LOCATION_SLOT in payload.slot_values:
+            room = payload.slot_values[ self.LOCATION_SLOT].value
+            if default_room and room in self.DEFAULT_ROOM_NAMES:
+                return default_room
+        return room
+                
 
-
-    def get_room_slot( self, payload, slot='room', default_name=''):
-        'Get the spoken room name'
-        if slot not in payload.slot_values: return default_name
-        room = payload.slot_values[ slot].value
-        return (default_name if room == _('here').lower()
-            else self.preposition( room))
+    def get_room_name( self, payload, modifier=str, default=None):
+        ''' Get the recognized room name,
+            optionally adding an article or preposition
+        '''
         
+        room = self.get_room( payload)
+        default_room = self.sites.get( payload.site_id)
+        if room and default is not None and room == default_room:
+            return default
+        return modifier( room or _('unknown room'))
 
-    def get_site_id( self, payload, slot='room'):
-        ''' Obtain a site_id by room name or message origin.
+
+    def get_room_config( self, payload):
+        ''' Get the configuration section for a recognized room.
             :param payload: parsed intent message payload
-            :param slot: room slot name
-            :return: site ID, or None if no room was given
+            :return: room configuration
         '''
 
-        if slot not in payload.slot_values: return 
-
-        room = payload.slot_values[ slot].value
-        if room == _("here").lower(): return payload.site_id
-
-        if room not in self.config or 'site_id' not in self.config[ room]:
-            raise SnipsSiteError( _("The room {room} is unknown.").format(
-                room=room))
-        return self.config[ room]['site_id']
+        room = self.get_room( payload)
+        if room in self.configuration: return self.configuration[ room]
+        raise SnipsClarificationError( _('in which room?'),
+            payload.intent.intent_name, self.LOCATION_SLOT)
 
 
-    def get_room_name( self, site_id, msg_site_id='', default_name=''):
-        'Get the room name for a site_id'
+    def get_site_id( self, payload):
+        ''' Obtain a site_id by explicit or implied room name.
+            :param payload: parsed intent message payload
+        '''
         
-        if site_id == msg_site_id: return default_name
-        if site_id not in self.config.sites:
-            raise SnipsSiteError( _("This room has not been configured yet."))
-        return self.preposition( self.config.sites[ site_id])
-
-
-    def preposition( self, room):
-        "Add an 'in the' preposition to a room name"
-        return self.PREPOSITIONS.get( room.lower(),
-            _("in the {room}").format( room=room))
+        config = self.get_room_config( payload)
+        if 'site_id' in config: return config['site_id']
+        raise SnipsError( _('This room has not been configured yet.'))
