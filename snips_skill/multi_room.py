@@ -11,11 +11,6 @@ class MultiRoomConfig:
         look up room names, associated configuration and site IDs.
     '''
     
-    DEFAULT_ROOM_NAMES = (
-        _('here'),
-        _('this room'),
-    )
-    
     LOCATION_SLOT = None # Override as needed, e.g. 'room'
 
 
@@ -32,14 +27,19 @@ class MultiRoomConfig:
         ROOMS[room.lower()] = RoomName( with_article, with_preposition)
 
 
+    def get_current_room( self, payload):
+        'Get the room name of the current site'
+        return self.sites.get( payload.site_id)
+
+        
     def get_room( self, payload):
         'Get the recognized room name'
         
-        default_room = room = self.sites.get( payload.site_id)
+        default_room = room = self.get_current_room( payload)
         assert self.LOCATION_SLOT, 'self.LOCATION_SLOT is undefined'
         if self.LOCATION_SLOT in payload.slot_values:
             room = payload.slot_values[ self.LOCATION_SLOT].value
-            if default_room and room in self.DEFAULT_ROOM_NAMES:
+            if default_room and room in DEFAULT_ROOM_NAMES:
                 return default_room
         return room
                 
@@ -50,7 +50,7 @@ class MultiRoomConfig:
         '''
         
         room = self.get_room( payload)
-        default_room = self.sites.get( payload.site_id)
+        default_room = self.get_current_room( payload)
         if room and default is not None and room == default_room:
             return default
         return modifier( room or _('unknown room'))
@@ -67,6 +67,15 @@ class MultiRoomConfig:
         raise SnipsClarificationError( _('in which room?'),
             payload.intent.intent_name, self.LOCATION_SLOT)
 
+    
+    def all_rooms( self, payload):
+        'Check whether the intent refers to every room at once'
+        room = self.get_room( payload).lower()
+        for name in ALL_ROOMS:
+            name = name.lower()
+            if name == room or name in payload.input:
+                return True
+        
 
     def get_site_id( self, payload):
         ''' Obtain a site_id by explicit or implied room name.
