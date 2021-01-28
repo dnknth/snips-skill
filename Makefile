@@ -4,7 +4,7 @@ POT = snips_skill/locale/snips_skill.pot
 LOCALE = snips_skill/locale/de/LC_MESSAGES/snips_skill.po
 SOURCES = $(wildcard snips_skill/*.py)
 
-log:
+log: $(POT) .venv3
 	.venv3/bin/python3 -m snips_skill
 
 trace:
@@ -16,9 +16,10 @@ build: $(LOCALE:.po=.mo) $(POT)
 test:
 	.venv3/bin/python3 -m snips_skill.test -s study tests/*.json
 
-.venv3: requirements.txt
+.venv3: setup.cfg
 	[ -d $@ ] || python3 -m venv $@
-	.venv3/bin/pip3 install -r $<
+	.venv3/bin/pip3 install -U pip wheel
+	.venv3/bin/pip3 install --editable .
 	touch $@
 
 messages: $(POT)
@@ -30,4 +31,4 @@ $(POT): $(SOURCES)
 	$(GETTEXT)/bin/msgfmt -o $@ $<
 
 clean:
-	rm -rf build *.egg-info
+	rm -rf build dist *.egg-info

@@ -1,0 +1,4 @@
+include pyproject.toml
+recursive-include snips_skill *.pot
+recursive-include snips_skill *.po
+recursive-include snips_skill *.mo

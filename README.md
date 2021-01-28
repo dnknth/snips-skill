@@ -27,12 +27,12 @@ as a callback for the given MQTT topic.
 ```python
 from snips_skill import CommandLineClient, topic
 
-class Logger( CommandLineClient):
+class Logger(CommandLineClient):
     'Log all incoming MQTT messages'
     
-    @topic( '#')
-    def print_msg( self, userdata, msg):
-        self.log.info( "%s: %s", msg.topic, msg.payload[:64])
+    @topic('#')
+    def print_msg(self, userdata, msg):
+        self.log.info("%s: %s", msg.topic, msg.payload[:64])
 
 if __name__ == '__main__':
     Logger().run()
@@ -88,11 +88,11 @@ with any `on_*` decorators.
 ```python
 from snips_skill import intent, Skill
 
-class HelloSkill( Skill):
+class HelloSkill(Skill):
     'Snips skill to say hello'
     
-    @intent( 'example:hello')
-    def say_hello( self, userdata, msg):
+    @intent('example:hello')
+    def say_hello(self, userdata, msg):
         return 'Hello, there'
         
 if __name__ == '__main__':

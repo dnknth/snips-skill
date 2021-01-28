@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-26 20:14+0100\n"
+"POT-Creation-Date: 2021-04-06 16:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,164 +17,188 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: snips_skill/i18n.py:20
-msgid "here"
-msgstr ""
-
-#: snips_skill/i18n.py:21
-msgid "this room"
+#: snips_skill/i18n.py:24
+msgid "done"
 msgstr ""
 
 #: snips_skill/i18n.py:25
+msgid "here you are"
+msgstr ""
+
+#: snips_skill/i18n.py:26
+msgid "OK"
+msgstr ""
+
+#: snips_skill/i18n.py:27
+msgid "yes"
+msgstr ""
+
+#: snips_skill/i18n.py:28
+msgid "finished"
+msgstr ""
+
+#: snips_skill/i18n.py:29
+msgid "alright"
+msgstr ""
+
+#: snips_skill/i18n.py:33
+msgid "here"
+msgstr ""
+
+#: snips_skill/i18n.py:34
+msgid "this room"
+msgstr ""
+
+#: snips_skill/i18n.py:38
+msgid "all"
+msgstr ""
+
+#: snips_skill/i18n.py:39
 msgid "everywhere"
 msgstr ""
 
-#: snips_skill/i18n.py:26
-msgid "all rooms"
+#: snips_skill/i18n.py:40
+msgid "everything"
 msgstr ""
 
-#: snips_skill/i18n.py:26
-msgid "in all rooms"
-msgstr ""
-
-#: snips_skill/i18n.py:32
+#: snips_skill/i18n.py:46
 msgid "bathroom"
 msgstr ""
 
-#: snips_skill/i18n.py:32
+#: snips_skill/i18n.py:46
 msgid "the bathroom"
 msgstr ""
 
-#: snips_skill/i18n.py:32
+#: snips_skill/i18n.py:46
 msgid "in the bathroom"
 msgstr ""
 
-#: snips_skill/i18n.py:33
+#: snips_skill/i18n.py:47
 msgid "bedroom"
 msgstr ""
 
-#: snips_skill/i18n.py:33
+#: snips_skill/i18n.py:47
 msgid "the bedroom"
 msgstr ""
 
-#: snips_skill/i18n.py:33
+#: snips_skill/i18n.py:47
 msgid "in the bedroom"
 msgstr ""
 
-#: snips_skill/i18n.py:34
+#: snips_skill/i18n.py:48
 msgid "dining room"
 msgstr ""
 
-#: snips_skill/i18n.py:34
+#: snips_skill/i18n.py:48
 msgid "the dining room"
 msgstr ""
 
-#: snips_skill/i18n.py:34
+#: snips_skill/i18n.py:48
 msgid "in the dining room"
 msgstr ""
 
-#: snips_skill/i18n.py:35
+#: snips_skill/i18n.py:49
 msgid "livingroom"
 msgstr ""
 
-#: snips_skill/i18n.py:35
+#: snips_skill/i18n.py:49
 msgid "the livingroom"
 msgstr ""
 
-#: snips_skill/i18n.py:35
+#: snips_skill/i18n.py:49
 msgid "in the livingroom"
 msgstr ""
 
-#: snips_skill/i18n.py:36
+#: snips_skill/i18n.py:50
 msgid "kid's room"
 msgstr ""
 
-#: snips_skill/i18n.py:36
+#: snips_skill/i18n.py:50
 msgid "the kid's room"
 msgstr ""
 
-#: snips_skill/i18n.py:36
+#: snips_skill/i18n.py:50
 msgid "in the kid's room"
 msgstr ""
 
-#: snips_skill/i18n.py:37
+#: snips_skill/i18n.py:51
 msgid "kitchen"
 msgstr ""
 
-#: snips_skill/i18n.py:37
+#: snips_skill/i18n.py:51
 msgid "the kitchen"
 msgstr ""
 
-#: snips_skill/i18n.py:37
+#: snips_skill/i18n.py:51
 msgid "in the kitchen"
 msgstr ""
 
-#: snips_skill/i18n.py:38
+#: snips_skill/i18n.py:52
 msgid "office"
 msgstr ""
 
-#: snips_skill/i18n.py:38
+#: snips_skill/i18n.py:52
 msgid "the office"
 msgstr ""
 
-#: snips_skill/i18n.py:38
+#: snips_skill/i18n.py:52
 msgid "in the office"
 msgstr ""
 
-#: snips_skill/i18n.py:39
+#: snips_skill/i18n.py:53
 msgid "hall"
 msgstr ""
 
-#: snips_skill/i18n.py:39
+#: snips_skill/i18n.py:53
 msgid "the hall"
 msgstr ""
 
-#: snips_skill/i18n.py:39
+#: snips_skill/i18n.py:53
 msgid "in the hall"
 msgstr ""
 
-#: snips_skill/i18n.py:40
+#: snips_skill/i18n.py:54
 msgid "garden"
 msgstr ""
 
-#: snips_skill/i18n.py:40
+#: snips_skill/i18n.py:54
 msgid "the garden"
 msgstr ""
 
-#: snips_skill/i18n.py:40
+#: snips_skill/i18n.py:54
 msgid "in the garden"
 msgstr ""
 
-#: snips_skill/i18n.py:41 snips_skill/multi_room.py:51
+#: snips_skill/i18n.py:55 snips_skill/multi_room.py:63
 msgid "unknown room"
 msgstr ""
 
-#: snips_skill/i18n.py:41
+#: snips_skill/i18n.py:55
 msgid "an unknown room"
 msgstr ""
 
-#: snips_skill/i18n.py:41
+#: snips_skill/i18n.py:55
 msgid "in an unknown room"
 msgstr ""
 
-#: snips_skill/i18n.py:49
+#: snips_skill/i18n.py:63
 #, python-brace-format
 msgid "the {room}"
 msgstr ""
 
-#: snips_skill/i18n.py:56
+#: snips_skill/i18n.py:70
 #, python-brace-format
 msgid "in the {room}"
 msgstr ""
 
-#: snips_skill/multi_room.py:62
+#: snips_skill/multi_room.py:74
 msgid "in which room?"
 msgstr ""
 
-#: snips_skill/multi_room.py:73
+#: snips_skill/multi_room.py:94
 msgid "This room has not been configured yet."
 msgstr ""
 
-#: snips_skill/skill.py:92
+#: snips_skill/skill.py:16
 msgid "Pardon?"
 msgstr ""
