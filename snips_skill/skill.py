@@ -22,7 +22,6 @@ class Skill( LoggingMixin, CommandLineMixin, SnipsClient):
     
     def __init__( self):
         super().__init__()
-        self.parse_args()
         self.configuration = ConfigParser()
 
         if os.path.isfile( self.options.config):

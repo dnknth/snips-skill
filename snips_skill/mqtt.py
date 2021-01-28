@@ -109,6 +109,11 @@ class CommandLineMixin:
     LOG_FORMAT = '%(message)s'
 
 
+    def __init__( self):
+        super().__init__()
+        self.parse_args()
+
+
     def parse_args( self, args=None):
         logging.basicConfig( format=self.LOG_FORMAT)
         self.parser = ArgumentParser( description=self.__doc__)
@@ -164,10 +169,7 @@ class CommandLineClient( CommandLineMixin, MqttClient):
 
     password = None
     
-    def __init__( self):
-        super().__init__()
-        self.parse_args()
-        
+    
     def add_arguments( self):
         'Set up arguments for connection parameters'        
         self.parser.add_argument( '-H', '--host', default='localhost',
@@ -179,13 +181,15 @@ class CommandLineClient( CommandLineMixin, MqttClient):
         self.parser.add_argument( '-u', '--username', nargs='?', help='User name')
         self.parser.add_argument( '-p', '--password', action='store_true',
             help='Prompt for password')
-
+    
+    
     def parse_args( self):
         super().parse_args()
         if self.options.username and self.options.password:
             self.password = getpass()
         if self.options.tls and self.options.port == MqttClient.DEFAULT_PORT:
             self.options.port = MqttClient.DEFAULT_TLS_PORT
+    
     
     def run( self):
         'Connect to MQTT and handle incoming messages'

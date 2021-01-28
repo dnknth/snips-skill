@@ -44,6 +44,11 @@ class MultiRoomConfig:
         return room
                 
 
+    def in_current_room( self, payload):
+        'Is the current site the disired room?'
+        return self.get_room( payload) == self.get_current_room( payload)
+
+        
     def get_room_name( self, payload, modifier=str, default=None):
         ''' Get the recognized room name,
             optionally adding an article or preposition

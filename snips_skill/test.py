@@ -14,7 +14,6 @@ class TestRunner( CommandLineMixin, LoggingMixin, SnipsClient):
 
     def __init__( self):
         super().__init__()
-        self.parse_args()
         
         self.test = None
         self.events = []
