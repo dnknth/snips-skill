@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from functools import wraps
 from getpass import getpass
 from paho.mqtt.client import Client as PahoClient, MQTTv311
-import logging
+import json, logging
 
 
 __all__ = ('MqttClient', 'CommandLineMixin', 'topic', 'CommandLineClient')
@@ -99,7 +99,8 @@ class MqttClient(PahoClient):
             self.message_callback_add(topic, callback)
 
 
-    def decode_json(self, payload):
+    @staticmethod
+    def decode_json(payload):
         'Try to decode a message payload as JSON'
         try: return json.loads(payload)
         except ValueError: return payload
@@ -151,15 +152,20 @@ class CommandLineMixin:
     
     DEFAULT_LOG_LEVEL = 2
     LOG_FORMAT = '%(message)s'
+    LOG_FILE = None
 
 
     def __init__(self):
         super().__init__()
+        self.init_logging()
         self.parse_args()
 
 
+    def init_logging(self):
+        logging.basicConfig(format=self.LOG_FORMAT, filename=self.LOG_FILE)
+
+
     def parse_args(self, args=None):
-        logging.basicConfig(format=self.LOG_FORMAT)
         self.parser = ArgumentParser(description=self.__doc__)
         self.parser.add_argument('-v', '--verbosity',
             type=int, choices=[0, 1, 2, 3], default=self.DEFAULT_LOG_LEVEL,
@@ -215,7 +221,7 @@ if __name__ == '__main__': # Demo code
 
     from colors import cyan
     from shutil import get_terminal_size
-    import sys, json
+    import sys
     
     class Logger(CommandLineClient):
                 

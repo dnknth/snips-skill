@@ -10,17 +10,8 @@ log: $(POT) .venv3
 trace:
 	.venv3/bin/python3 -m snips_skill.mqtt -H home -j
 
-build: $(LOCALE:.po=.mo) $(POT)
-	python3 setup.py build
-
 test:
 	.venv3/bin/python3 -m snips_skill.test -s study tests/*.json
-
-.venv3: setup.cfg
-	[ -d $@ ] || python3 -m venv $@
-	.venv3/bin/pip3 install -U pip wheel
-	.venv3/bin/pip3 install --editable .
-	touch $@
 
 messages: $(POT)
 
@@ -32,3 +23,18 @@ $(POT): $(SOURCES)
 
 clean:
 	rm -rf build dist *.egg-info
+
+tidy: clean
+	rm -rf .venv3
+
+pypi: clean .venv3 $(LOCALE:.po=.mo) $(POT)
+	.venv3/bin/pip3 install -U build twine
+	.venv3/bin/python3 -m build -n
+	.venv3/bin/twine upload dist/*
+	$(MAKE) clean
+
+.venv3: setup.cfg
+	[ -d $@ ] || python3 -m venv $@
+	.venv3/bin/pip3 install -U pip wheel
+	.venv3/bin/pip3 install --editable .
+	touch $@
