@@ -15,29 +15,29 @@ class SnipsClient(MqttClient):
     
     CONFIG = '/etc/snips.toml'
     
-    INTENT_PREFIX         = 'hermes/intent/'
-    DIALOGUE              = 'hermes/dialogueManager/'
+    INTENT_PREFIX    = 'hermes/intent/'
+    DIALOGUE         = 'hermes/dialogueManager/'
     
     # Session life cycle messages
-    HOTWORD_DETECTED      = 'hermes/hotword/+/detected'
-    START_SESSION         = DIALOGUE + 'startSession'
-    SESSION_QUEUED        = DIALOGUE + 'sessionQueued'
-    SESSION_STARTED       = DIALOGUE + 'sessionStarted'
-    CONTINUE_SESSION      = DIALOGUE + 'continueSession'
-    END_SESSION           = DIALOGUE + 'endSession'
-    SESSION_ENDED         = DIALOGUE + 'sessionEnded'
+    HOTWORD_DETECTED = 'hermes/hotword/+/detected'
+    START_SESSION    = DIALOGUE + 'startSession'
+    SESSION_QUEUED   = DIALOGUE + 'sessionQueued'
+    SESSION_STARTED  = DIALOGUE + 'sessionStarted'
+    CONTINUE_SESSION = DIALOGUE + 'continueSession'
+    END_SESSION      = DIALOGUE + 'endSession'
+    SESSION_ENDED    = DIALOGUE + 'sessionEnded'
     
     # Misc
-    PLAY_BYTES     = 'hermes/audioServer/{site_id}/playBytes/{request_id}'
-    PLAY_FINISHED  = 'hermes/audioServer/%s/playFinished'
-    REGISTER_SOUND = 'hermes/tts/registerSound/%s'
+    PLAY_BYTES       = 'hermes/audioServer/{site_id}/playBytes/{request_id}'
+    PLAY_FINISHED    = 'hermes/audioServer/%s/playFinished'
+    REGISTER_SOUND   = 'hermes/tts/registerSound/%s'
 
 
     def __init__(self, config=CONFIG, 
         client_id=None, clean_session=True, userdata=None,
         protocol=MQTTv311, transport=MqttClient.TCP):
         
-        super().__init__(client_id, clean_session, userdata,
+        super(SnipsClient, self).__init__(client_id, clean_session, userdata,
             protocol, transport)
 
         self.log.debug('Loading config: %s', config)        
@@ -183,7 +183,7 @@ on_hotword_detected = partial(topic,
 on_start_session = partial(topic,
     SnipsClient.START_SESSION, payload_converter=_load_json)
 
-def on_intent(intent, qos=0, log_level=logging.DEBUG):
+def on_intent(intent, qos=0, log_level=logging.NOTSET):
  return topic('%s%s' % (SnipsClient.INTENT_PREFIX, intent),
      qos=qos, payload_converter=_load_json, log_level=log_level)
 
@@ -202,7 +202,7 @@ on_end_session = partial(topic,
 on_session_ended = partial(topic,
     SnipsClient.SESSION_ENDED, payload_converter=_load_json)
 
-def on_play_finished(site='+', qos=0, log_level=logging.DEBUG):
+def on_play_finished(site='+', qos=0, log_level=logging.NOTSET):
     return topic(SnipsClient.PLAY_FINISHED % site,
         qos=qos, payload_converter=_load_json, log_level=log_level)
 

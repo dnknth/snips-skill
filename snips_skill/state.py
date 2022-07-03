@@ -1,5 +1,4 @@
 from . mqtt import topic
-import re
 
 
 __all__ = ('StateAwareMixin',)
@@ -47,7 +46,7 @@ class StateAwareMixin:
         # Update only if the value has changed
         if self.current_state.get(topic) != payload:
             self.current_state[topic] = payload
-            self.log.debug('Updated: %s = %s', topic, payload)
+            self.log.info('Updated: %s = %s', topic, payload)
             return topic
     
     

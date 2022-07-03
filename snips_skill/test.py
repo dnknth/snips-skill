@@ -1,4 +1,5 @@
 from argparse import ArgumentTypeError, FileType
+from basecmd import BaseCmd
 from colors import red, green, yellow, blue, magenta, cyan
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +10,7 @@ from . mqtt import *
 from . snips import *
 
 
-class TestRunner(CommandLineMixin, LoggingMixin, SnipsClient):
+class TestRunner(BaseCmd, LoggingMixin, SnipsClient):
     'Record Snips sessions and play them back'
 
     def __init__(self):
@@ -122,9 +123,9 @@ class TestRunner(CommandLineMixin, LoggingMixin, SnipsClient):
                 'Expected text: %s, received: %s' % (payload.get('text'), text)
 
             if topic.startswith(self.INTENT_PREFIX):
-                self.tabular_log(logging.INFO, 'intent', topic, label_color=green)
-            else: self.tabular_log(logging.INFO, 'topic', topic, label_color=cyan)
-            if text: self.tabular_log(logging.INFO, 'text', text, label_color=cyan)
+                self.tabular_log(logging.INFO, 'intent', topic, color=green)
+            else: self.tabular_log(logging.INFO, 'topic', topic, color=cyan)
+            if text: self.tabular_log(logging.INFO, 'text', text, color=cyan)
             
         except AssertionError as e: self._fail(e)
 
@@ -164,5 +165,5 @@ if __name__ == '__main__':
     import sys
 
     client = TestRunner()
-    client.run()
+    client()
     sys.exit(client.failures)

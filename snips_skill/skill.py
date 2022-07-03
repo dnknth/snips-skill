@@ -2,8 +2,8 @@ from . exceptions import SnipsError, SnipsClarificationError
 from . i18n import get_translations
 from . intent import IntentPayload
 from . logging import LoggingMixin
-from . mqtt import CommandLineMixin
 from . snips import SnipsClient, on_intent
+from basecmd import BaseCmd
 from configparser import ConfigParser
 from functools import wraps
 import logging, os
@@ -16,7 +16,7 @@ _, ngettext = get_translations(__file__, 'snips_skill')
 PARDON = _('Pardon?')
 
 
-class Skill(LoggingMixin, CommandLineMixin, SnipsClient):
+class Skill(LoggingMixin, BaseCmd, SnipsClient):
     'Base class for Snips actions.'
     
     CONFIGURATION_FILE = 'config.ini'
@@ -25,7 +25,10 @@ class Skill(LoggingMixin, CommandLineMixin, SnipsClient):
     
     
     def __init__(self):
-        super().__init__()
+        # Work around a Paho cleanup bug if called with -h or illegal args
+        self._sock = self._sockpairR = self._sockpairW = None
+        super(Skill, self).__init__()
+        
         self.configuration = ConfigParser()
 
         if os.path.isfile(self.options.config):
@@ -55,7 +58,7 @@ class Skill(LoggingMixin, CommandLineMixin, SnipsClient):
             help='Configuration file (%s)' % self.CONFIGURATION_FILE)
     
     
-def intent(intent, qos=1, log_level=logging.DEBUG, silent=False):
+def intent(intent, qos=1, log_level=logging.NOTSET, silent=False):
     ''' Decorator for intent handlers.
         :param intent: Intent name.
         :param qos: MQTT quality of service.
@@ -68,25 +71,25 @@ def intent(intent, qos=1, log_level=logging.DEBUG, silent=False):
     '''
 
     def wrapper(method):
-        @on_intent(intent, qos=qos, log_level=logging.DEBUG)
+        @on_intent(intent, qos=qos)
         @wraps(method)
         def wrapped(client, userdata, msg):
             msg.payload = IntentPayload(msg.payload)
             if log_level: client.log_intent(msg.payload, level=log_level)
             try:
                 result = method(client, userdata, msg)
+                if log_level and result:
+                    client.log_response(result, level=log_level)
                 if result is None and silent:
                     client.end_session(msg.payload.session_id, qos=qos)
                     return
                 raise SnipsError(result)
-                if log_level: client.log_response(result, level=log_level)
             except SnipsClarificationError as sce:
                 if log_level: client.log_response(sce, level=log_level)
                 client.continue_session(msg.payload.session_id, str(sce),
                     [sce.intent ] if sce.intent else None,
                     slot=sce.slot, custom_data=sce.custom_data)
             except SnipsError as e:
-                if log_level: client.log_response(e, level=log_level)
                 client.end_session(msg.payload.session_id, str(e), qos=qos)
         return wrapped
     return wrapper

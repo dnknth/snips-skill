@@ -5,13 +5,14 @@
 '''
 
 from argparse import ArgumentParser
+from basecmd import BaseCmd
 from functools import wraps
 from getpass import getpass
 from paho.mqtt.client import Client as PahoClient, MQTTv311
-import json, logging
+import json, logging, sys
 
 
-__all__ = ('MqttClient', 'CommandLineMixin', 'topic', 'CommandLineClient')
+__all__ = ('MqttClient', 'topic', 'CommandLineClient')
 
 
 class MqttClient(PahoClient):
@@ -27,10 +28,10 @@ class MqttClient(PahoClient):
     def __init__(self, client_id=None, clean_session=True, \
         userdata=None, protocol=MQTTv311, transport=TCP):
 
-        super().__init__(client_id, clean_session or not client_id,
+        super(MqttClient, self).__init__(client_id,
+            clean_session or not client_id,
             userdata, protocol, transport)
         self._tls_initialized = False
-        self.log = logging.getLogger(self.__class__.__name__)
 
 
     def __enter__(self):
@@ -80,9 +81,11 @@ class MqttClient(PahoClient):
         self.log.debug('Subscribed to MQTT topic: %s', topic)
         
         
-    def publish(self, topic, payload=None, qos=0, retain=False):
+    def publish(self, topic, payload=None,
+        qos=0, retain=False, log_level=logging.NOTSET):
         'Send an MQTT message'
-        self.log.debug('Publishing: %s', topic)
+        
+        self.log.log(log_level, 'Publishing: %s = %.20s', topic, payload)
         return super().publish(topic, payload, qos, retain)
 
 
@@ -107,7 +110,7 @@ class MqttClient(PahoClient):
     
 
 
-def topic(topic, qos=0, payload_converter=None, log_level=logging.DEBUG):
+def topic(topic, qos=0, payload_converter=None, log_level=logging.NOTSET):
     ''' Decorator for callback functions.
         Callbacks are invoked with these positional parameters:
          - client: MqttClient instance
@@ -137,53 +140,9 @@ def topic(topic, qos=0, payload_converter=None, log_level=logging.DEBUG):
         MqttClient.SUBSCRIPTIONS[topic] = (wrapped, qos)
         return wrapped
     return wrapper
-  
 
-class CommandLineMixin:
-    'Provides logging and standard command-limne arguments'
-
-    # Map verbosity argument choices to log levels
-    LOG_LEVELS = {
-        0: logging.ERROR,
-        1: logging.WARNING,
-        2: logging.INFO,
-        3: logging.DEBUG,
-    }
-    
-    DEFAULT_LOG_LEVEL = 2
-    LOG_FORMAT = '%(message)s'
-    LOG_FILE = None
-
-
-    def __init__(self):
-        super().__init__()
-        self.init_logging()
-        self.parse_args()
-
-
-    def init_logging(self):
-        logging.basicConfig(format=self.LOG_FORMAT, filename=self.LOG_FILE)
-
-
-    def parse_args(self, args=None):
-        self.parser = ArgumentParser(description=self.__doc__)
-        self.parser.add_argument('-v', '--verbosity',
-            type=int, choices=[0, 1, 2, 3], default=self.DEFAULT_LOG_LEVEL,
-            help='Logging verbosity: 0=errors only, 1=errors and warnings, 2=normal output, 3=debug output')
-        self.add_arguments()
-        
-        self.options = self.parser.parse_args(args)
-        self.log.setLevel(self.LOG_LEVELS[self.options.verbosity])
-        self.log.debug('Command line options: %s', self.options)
-    
-
-    def add_arguments(self):
-        'Hook for subclasses to add additional command line options'
-        pass
  
- 
-class CommandLineClient(CommandLineMixin, MqttClient):
-    
+class CommandLineClient(BaseCmd, MqttClient):
     'Simple MQTT command line client'
 
     password = None
@@ -215,18 +174,23 @@ class CommandLineClient(CommandLineMixin, MqttClient):
         with self.connect(self.options.host, self.options.port,
             self.options.username, self.password, use_tls=self.options.tls):
             self.loop_forever()
+    
+
+    def __call__(self):
+        'Syntactic sugar for self.run()'
+        self.run()
         
         
 if __name__ == '__main__': # Demo code
 
     from colors import cyan
     from shutil import get_terminal_size
-    import sys
+
     
     class Logger(CommandLineClient):
                 
         WIDTH = get_terminal_size().columns
-        COLOR = cyan if sys.stdout.isatty() else str
+        COLOR = cyan if sys.stderr.isatty() else str
         
         def add_arguments(self):
             super().add_arguments()
@@ -250,4 +214,4 @@ if __name__ == '__main__': # Demo code
         if client.options.clear and msg.retain and msg.payload:
             client.publish(msg.topic, retain=True)
 
-    client.run()
+    client()
