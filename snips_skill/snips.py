@@ -96,7 +96,7 @@ class SnipsClient(MqttClient):
 
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
-    def start_session(self, site_id, init, custom_data=None, qos=1):
+    def start_session(self, site_id, init, custom_data=None, qos=1, **kw):
         'End the session with an optional message'
         payload = { 'siteId': site_id, 'init' : init }
         
@@ -106,16 +106,16 @@ class SnipsClient(MqttClient):
             payload['customData'] = str(custom_data)
             
         self.log.debug("Starting %s session on site '%s'", init.get('type'), site_id)
-        self.publish(self.START_SESSION, json.dumps(payload), qos=qos)
+        self.publish(self.START_SESSION, json.dumps(payload), qos=qos, **kw)
 
 
-    def speak(self, site_id, text):
+    def speak(self, site_id, text, **kw):
         'Say a one-time notification'
-        self.start_session(site_id, self.notification_init(text))
+        self.start_session(site_id, self.notification_init(text), **kw)
         
 
     # See: https://docs.snips.ai/reference/dialogue#end-session
-    def end_session(self, session_id, text=None, qos=1):
+    def end_session(self, session_id, text=None, qos=1, **kw):
         'End the session with an optional message'
         payload = { 'sessionId': session_id }
         
@@ -124,12 +124,12 @@ class SnipsClient(MqttClient):
             payload['text'] = text
 
         self.log.debug("Ending session %s with '%s'", session_id, text)
-        self.publish(self.END_SESSION, json.dumps(payload), qos=qos)
+        self.publish(self.END_SESSION, json.dumps(payload), qos=qos, **kw)
 
 
     # See: https://docs.snips.ai/reference/dialogue#continue-session
     def continue_session(self, session_id, text, intent_filter=None, slot=None,
-            send_intent_not_recognized=False, custom_data=None, qos=1):
+            send_intent_not_recognized=False, custom_data=None, qos=1, **kw):
         'Continue the session with a question'
         
         text = ' '.join(text.split())
@@ -145,26 +145,31 @@ class SnipsClient(MqttClient):
             payload['customData'] = str(custom_data)
 
         self.log.debug("Continuing session %s with '%s'", session_id, text)
-        self.publish(self.CONTINUE_SESSION, json.dumps(payload), qos=qos)
+        self.publish(self.CONTINUE_SESSION, json.dumps(payload), qos=qos, **kw)
 
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
-    def play_sound(self, site_id, wav_data, request_id=None):
+    def play_sound(self, site_id, wav_data, request_id=None, **kw):
         'Play a WAV sound at the given site'
         if not request_id: request_id = str(uuid.uuid4())
-        self.publish(self.PLAY_BYTES.format(site_id=site_id, request_id=request_id), payload=wav_data)
+        self.publish(self.PLAY_BYTES.format(site_id=site_id, request_id=request_id),
+            payload=wav_data, **kw)
         return request_id
 
 
-    def register_sound(self, name, wav_data):
-        self.publish(self.REGISTER_SOUND % name, wav_data)
+    def register_sound(self, name, wav_data, **kw):
+        self.publish(self.REGISTER_SOUND % name, wav_data, **kw)
         return self
 
 
     def run(self):
         'Connect to MQTT and handle incoming messages'
-        with self.connect():
-            self.loop_forever()
+        try:
+            with self.connect():
+                self.loop_forever()
+        except:
+            if self.options.log_file: self.log.exception('Fatal error')
+            raise
 
 
 ###################################

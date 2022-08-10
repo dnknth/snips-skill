@@ -171,9 +171,13 @@ class CommandLineClient(BaseCmd, MqttClient):
     
     def run(self):
         'Connect to MQTT and handle incoming messages'
-        with self.connect(self.options.host, self.options.port,
-            self.options.username, self.password, use_tls=self.options.tls):
-            self.loop_forever()
+        try:
+            with self.connect(self.options.host, self.options.port,
+                self.options.username, self.password, use_tls=self.options.tls):
+                    self.loop_forever()
+        except:
+            if self.options.log_file: self.log.exception('Fatal error')
+            raise
     
 
     def __call__(self):

@@ -11,6 +11,7 @@ Helpers to keep [Snips](https://snips.ai) skills in Python3 free of boilerplate 
  - `MultiRoomConfig`: Utilities for multi-room setups.
  - `Skill`: Base class for Snips actions.
  - `@intent` decorator, see below.
+ - `StateAwareMixin` with `@when` and `@conditional` decorators for stateful MQTT clients.
 
 ## Plain MQTT clients
 
@@ -98,3 +99,32 @@ class HelloSkill(Skill):
 if __name__ == '__main__':
     HelloSkill().run()
 ```
+
+## `StateAwareMixin`, `@when` and `@conditional` decorators
+
+Clients can use `StateAwareMixin` to track the last known state of relevant topics.
+For that, a `status_topic` needs to be configured in the global section of `config.ini`.
+Topics and payloads are kept in `self.current_state`.
+
+Change handlers are should be decorated with either `@when` or `@conditional`.
+The former triggers the handler whenever a boolean condition on the current state
+is fulfilled, the latter whenever a MQTT topic relevant for the given boolean condition 
+has changed.
+
+### Usage example
+
+```python
+
+  @when('topic/a != 0')
+  def topic_a_handler(self):
+    ...
+  
+  @conditional('topic/a != 0 or topic/b != 0')
+  def topic_a_or_b_handler(self, on):
+    if on:
+      ...
+    else:
+      ...
+```
+
+See `test_expr.py` for all supported expressions.
