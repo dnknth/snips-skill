@@ -17,4 +17,4 @@ __all__ = ('CommandLineClient', 'LoggingMixin', 'MqttClient',
     'on_end_session', 'on_continue_session', 'on_session_ended', 'on_play_finished',
     'CONFIRMATIONS', 'ROOMS', 'room_with_article', 'room_with_preposition')
 
-__version__ = '0.1.20'
+__version__ = '0.1.21'

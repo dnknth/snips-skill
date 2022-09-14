@@ -23,10 +23,10 @@ class StateAwareMixin:
     update_log_level = logging.INFO
     
     
-    def __init__(self):
+    def __init__(self, **kw):
         'Register topics and the state callcack.'
         
-        super().__init__()
+        super().__init__(**kw)
         self.current_state = {}
 
         status_topic = self.get_config().get('status_topic')

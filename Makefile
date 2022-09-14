@@ -27,12 +27,13 @@ clean:
 tidy: clean
 	rm -rf .venv3
 
-pypi: clean .venv3 $(LOCALE:.po=.mo) $(POT)
+dist: setup.cfg .venv3 $(LOCALE:.po=.mo) $(POT)
 	.venv3/bin/python3 -m build -n
+	
+pypi: clean dist
 	.venv3/bin/twine upload dist/*
-	$(MAKE) clean
 
-.venv3: setup.cfg
+.venv3:
 	[ -d $@ ] || python3 -m venv $@
 	.venv3/bin/pip3 install -U pip wheel build twine
 	.venv3/bin/pip3 install --editable .

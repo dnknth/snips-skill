@@ -27,6 +27,7 @@ CONFIRMATIONS = (
     _('yes'),
     _('finished'),
     _('alright'),
+    _('at your service'),
 )
 
 DEFAULT_ROOM_NAMES = (

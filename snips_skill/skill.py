@@ -24,10 +24,14 @@ class Skill(LoggingMixin, BaseCmd, SnipsClient):
     STANDARD_SECTIONS = ('DEFAULT', 'global', 'secret')
     
     
-    def __init__(self):
+    def __init__(self, client_id=None, clean_session=True, userdata=None):
         # Work around a Paho cleanup bug if called with -h or illegal args
         self._sock = self._sockpairR = self._sockpairW = None
-        super(Skill, self).__init__()
+        
+        super(Skill, self).__init__(
+            client_id=client_id,
+            clean_session=clean_session,
+            userdata=userdata)
         
         self.configuration = ConfigParser()
 

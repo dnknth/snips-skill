@@ -2,7 +2,7 @@
 
 from . mqtt import MqttClient, MQTTv311, topic
 from functools import partial, wraps
-import io, json, logging, toml, uuid, wave
+import io, json, logging, os, toml, uuid, wave
 
 
 __all__ = ('SnipsClient', 'debug_json',
@@ -33,15 +33,17 @@ class SnipsClient(MqttClient):
     REGISTER_SOUND   = 'hermes/tts/registerSound/%s'
 
 
-    def __init__(self, config=CONFIG, 
-        client_id=None, clean_session=True, userdata=None,
-        protocol=MQTTv311, transport=MqttClient.TCP):
+    def __init__(self, client_id=None, clean_session=True, userdata=None,
+        protocol=MQTTv311, transport=MqttClient.TCP, config=None):
         
+        if client_id is None:
+            client_id = 'snips-%s-%s' % (self.__class__.__name__.lower(), os.getpid())
+            
         super(SnipsClient, self).__init__(client_id, clean_session, userdata,
             protocol, transport)
 
         self.log.debug('Loading config: %s', config)        
-        self.config = toml.load(config)
+        self.config = toml.load(config or self.CONFIG)
 
         
     def connect(self):
