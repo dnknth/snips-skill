@@ -19,7 +19,7 @@ class StateAwareMixin:
     '''
     
     conditions = {}
-    parser = Parser()
+    expr_parser = Parser()
     update_log_level = logging.INFO
     
     
@@ -94,7 +94,7 @@ def conditional(expression):
         For the expression grammar, see the docstrings in `expr.py`.
     '''
     
-    predicate = StateAwareMixin.parser.parse(expression)
+    predicate = StateAwareMixin.expr_parser.parse(expression)
     
     def wrapper(method):
         id = method.func.__name__ if type(method) is partial else method.__name__
@@ -118,7 +118,7 @@ def when(expression):
         For the expression grammar, see the docstrings in `expr.py`.
     '''
     
-    predicate = StateAwareMixin.parser.parse(expression)
+    predicate = StateAwareMixin.expr_parser.parse(expression)
     
     def wrapper(method):
         id = method.func.__name__ if type(method) is partial else method.__name__
