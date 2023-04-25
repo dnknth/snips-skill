@@ -102,29 +102,36 @@ if __name__ == '__main__':
 
 ## `StateAwareMixin`, `@when` and `@conditional` decorators
 
-Clients can use `StateAwareMixin` to track the last known state of relevant topics.
-For that, a `status_topic` needs to be configured in the global section of `config.ini`.
+These define actions triggered by state changes on MQTT.
+Example: _Sensor registers motion -> switch the light on_
+
+Clients can use `StateAwareMixin` to track the last known state
+of relevant topics. For that, a `status_topic` needs to be configured
+in the global section of `config.ini`.
 Topics and payloads are kept in `self.current_state`.
 
-Change handlers are should be decorated with either `@when` or `@conditional`.
-The former triggers the handler whenever a boolean condition on the current state
-is fulfilled, the latter whenever a MQTT topic relevant for the given boolean condition 
-has changed.
+Change handlers should be decorated with either `@when` or `@conditional`.
+The former triggers the handler whenever a boolean condition on the current
+state is fulfilled, the latter whenever a MQTT topic relevant for the given boolean condition changes.
 
 ### Usage example
 
 ```python
 
-  @when('topic/a != 0')
+  @when('topic/a > 0')
   def topic_a_handler(self):
-    ...
+    ... # do something
   
   @conditional('topic/a != 0 or topic/b != 0')
   def topic_a_or_b_handler(self, on):
     if on:
-      ...
+      ... # switch something on
     else:
-      ...
+      ... # switch it off
 ```
 
-See `test_expr.py` for all supported expressions.
+Boolean expressions, numeric comparisons, string (in)equality
+and string matching with regular expressions are supported.
+As usual, parentheses can be used to control the evaluation order.
+
+See `test_expr.py` for the exact grammar.
