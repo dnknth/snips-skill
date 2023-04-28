@@ -1,7 +1,7 @@
 from . exceptions import SnipsError, SnipsClarificationError
 from . i18n import get_translations
 from . intent import IntentPayload
-from . logging import LoggingMixin
+from . log import LoggingMixin
 from . snips import SnipsClient, on_intent
 from basecmd import BaseCmd
 from configparser import ConfigParser

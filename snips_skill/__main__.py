@@ -1,5 +1,5 @@
 from . intent import IntentPayload
-from . logging import LoggingMixin
+from . log import LoggingMixin
 from . snips import *
 from basecmd import BaseCmd
 import logging

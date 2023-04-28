@@ -5,12 +5,12 @@ from datetime import datetime
 from pathlib import Path
 import json, logging
 
-from . logging import LoggingMixin
+from . log import LoggingMixin
 from . mqtt import *
 from . snips import *
 
 
-class TestRunner(BaseCmd, LoggingMixin, SnipsClient):
+class Recorder(BaseCmd, LoggingMixin, SnipsClient):
     'Record Snips sessions and play them back'
 
     def __init__(self):
@@ -164,6 +164,6 @@ class TestRunner(BaseCmd, LoggingMixin, SnipsClient):
 if __name__ == '__main__':
     import sys
 
-    client = TestRunner()
+    client = Recorder()
     client()
     sys.exit(client.failures)

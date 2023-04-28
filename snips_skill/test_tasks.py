@@ -1,11 +1,15 @@
 from datetime import datetime, timedelta
-from localtime import *
 from pprint import pprint
 from tasks import Tasks
 from unittest.mock import patch
 import unittest, time
 
 
+def at(hour, minute=0):
+    'Create a fixed instant in local time'
+    return datetime(2020, 1, 1, hour, minute).astimezone()
+    
+    
 class TasksTest(unittest.TestCase):
 
     t1 = Tasks.Task(at(1), 't1', print)

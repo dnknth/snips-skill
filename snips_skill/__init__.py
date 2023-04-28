@@ -1,6 +1,6 @@
 from . exceptions import *
 from . i18n import get_translations, CONFIRMATIONS
-from . logging import *
+from . log import *
 from . mqtt import *
 from . multi_room import *
 from . snips import *

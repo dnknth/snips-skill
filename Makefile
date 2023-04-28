@@ -11,7 +11,7 @@ trace:
 	.venv3/bin/python3 -m snips_skill.mqtt -H home -j
 
 test:
-	.venv3/bin/python3 -m snips_skill.test -s study tests/*.json
+	.venv3/bin/python3 -m unittest discover snips_skill
 
 messages: $(POT)
 
