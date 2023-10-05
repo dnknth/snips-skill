@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 from . mqtt import MqttClient, MQTTv311, topic
+from decouple import config
 from functools import partial, wraps
-import io, json, logging, os, toml, uuid, wave
+import json, logging, os, toml, uuid
 
 
 __all__ = ('SnipsClient', 'debug_json',
@@ -13,7 +14,7 @@ __all__ = ('SnipsClient', 'debug_json',
 class SnipsClient(MqttClient):
     'Snips client with auto-configuration'
     
-    CONFIG = '/etc/snips.toml'
+    CONFIG = config('SNIPS_CONFIG', default='/etc/snips.toml')
     
     INTENT_PREFIX    = 'hermes/intent/'
     DIALOGUE         = 'hermes/dialogueManager/'

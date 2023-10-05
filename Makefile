@@ -1,4 +1,5 @@
-GETTEXT = /usr/local/opt/gettext
+export PATH := $(PATH)/opt/homebrew/bin:/usr/local/bin
+export SNIPS_CONFIG = /usr/local/etc/snips.toml
 
 POT = snips_skill/locale/snips_skill.pot
 LOCALE = snips_skill/locale/de/LC_MESSAGES/snips_skill.po
@@ -16,13 +17,13 @@ test:
 messages: $(POT)
 
 $(POT): $(SOURCES)
-	$(GETTEXT)/bin/xgettext -L python -o $@ $^
+	xgettext -L python -o $@ $^
 
 %.mo: %.po
-	$(GETTEXT)/bin/msgfmt -o $@ $<
+	msgfmt -o $@ $<
 
 clean:
-	rm -rf build dist *.egg-info
+	rm -rf build dist *.egg-info __pycache__
 
 tidy: clean
 	rm -rf .venv3

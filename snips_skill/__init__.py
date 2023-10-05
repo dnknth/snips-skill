@@ -20,4 +20,4 @@ __all__ = ('CommandLineClient', 'LoggingMixin', 'MqttClient',
     'CONFIRMATIONS', 'ROOMS', 'room_with_article', 'room_with_preposition')
 
 
-__version__ = '0.1.25'
+__version__ = '0.1.26'
