@@ -94,7 +94,7 @@ class Slot:
         self.entity = json_dict['entity']
         self.slot_name = json_dict['slotName']
         self.raw_value = json_dict['rawValue']
-        self.confidence_score = json_dict['confidenceScore']
+        self.confidence_score = json_dict.get('confidenceScore')
         
         r = json_dict['range']
         self.range = (r['start'], r['end']) if r else None
@@ -105,8 +105,8 @@ class Slot:
 
 
     def __repr__(self):
-        return "<Slot '%s' score=%.2f value='%s'>" % (
-            self.slot_name, self.confidence_score, self.value)
+        return "<Slot '%s' value='%s'>" % (
+            self.slot_name, self.value)
 
 
 # See: https://docs.snips.ai/reference/dialogue#intent
