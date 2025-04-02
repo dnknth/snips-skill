@@ -28,7 +28,7 @@ clean:
 tidy: clean
 	rm -rf .venv3
 
-dist: setup.cfg .venv3 $(LOCALE:.po=.mo) $(POT)
+dist: pyproject.toml .venv3 $(LOCALE:.po=.mo) $(POT)
 	.venv3/bin/python3 -m build -n
 	
 pypi: clean dist

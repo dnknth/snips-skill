@@ -4,11 +4,10 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7"]
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v3
@@ -22,9 +21,8 @@ jobs:
           python -m pip install basecmd croniter \
             'paho-mqtt==1.4.*' 'ply==3.*' \
             setuptools toml
-          
+
           pip install unittest-xml-reporting
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run tests
         run: |
           python -m xmlrunner discover snips_skill
@@ -32,5 +30,5 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Tests
-          path: 'TEST-*.xml'
+          path: "TEST-*.xml"
           reporter: java-junit

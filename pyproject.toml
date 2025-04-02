@@ -1,6 +1,57 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "snips-skill"
+authors = [{name = "dnknth"}]
+description = "Boilerplate for Snips skills in Python3"
+license = "MIT"
+classifiers = [
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries",
+]
+urls = {Homepage = "https://github.com/dnknth/snips-skill"}
+dependencies = [
+    "basecmd",
+    "croniter",
+    "paho-mqtt==1.4.*",
+    "ply==3.*",
+    "toml",
+]
+dynamic = ["version"]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["snips_skill", "snips_skill.locale", "snips_skill.locale.de", "snips_skill.locale.de.LC_MESSAGES" ]
+
+[tool.setuptools.dynamic]
+version = {attr = "snips_skill.__version__"}
+
+[tool.extract_messages]
+add_comments = "TRANSLATOR:"
+msgid_bugs_address = ""
+output_file = "snips_skill/locale/snips_skill.pot"
+keywords = "_ N_ tag_"
+width = "72"
+
+[tool.init_catalog]
+input_file = "snips_skill/locale/snips_skill.pot"
+output_dir = "snips_skill/locale"
+domain = "snips_skill"
+
+[tool.compile_catalog]
+directory = "snips_skill/locale"
+domain = "snips_skill"
+
+[tool.update_catalog]
+input_file = "snips_skill/locale/snips_skill.pot"
+output_dir = "snips_skill/locale"
+domain = "snips_skill"
