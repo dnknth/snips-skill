@@ -5,14 +5,18 @@ POT = snips_skill/locale/snips_skill.pot
 LOCALE = snips_skill/locale/de/LC_MESSAGES/snips_skill.po
 SOURCES = $(wildcard snips_skill/*.py)
 
-log: $(POT) .venv3
-	.venv3/bin/python3 -m snips_skill
+log: $(POT) .venv
+	uv run intent-log
 
 trace:
-	.venv3/bin/python3 -m snips_skill.mqtt -H home -j
+	uv run mqtt-log -H home -j
+
+recordings:
+	mkdir -p $@
+	uv run recorder -d $@ --loop
 
 test:
-	.venv3/bin/python3 -m unittest discover snips_skill
+	.venv/bin/python3 -m unittest discover snips_skill
 
 messages: $(POT)
 
@@ -26,16 +30,13 @@ clean:
 	rm -rf build dist *.egg-info __pycache__
 
 tidy: clean
-	rm -rf .venv3
+	rm -rf .venv
 
-dist: pyproject.toml .venv3 $(LOCALE:.po=.mo) $(POT)
-	.venv3/bin/python3 -m build -n
+dist: pyproject.toml .venv $(LOCALE:.po=.mo) $(POT)
+	uv build
 	
 pypi: clean dist
-	.venv3/bin/twine upload dist/*
+	uv publish dist/*
 
-.venv3:
-	[ -d $@ ] || python3 -m venv $@
-	.venv3/bin/pip3 install -U pip wheel build twine
-	.venv3/bin/pip3 install --editable .
-	touch $@
+.venv:
+	uv sync

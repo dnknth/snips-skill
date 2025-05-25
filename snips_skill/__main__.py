@@ -12,7 +12,7 @@ class Logger(BaseCmd, LoggingMixin, SnipsClient):
     # Do not use @intent here because it ends the session,
     # and thus interferes with other intent handlers
     def intent_logger(self, userdata, msg):
-        self.log_intent(IntentPayload(msg.payload), level=logging.INFO)
+        self.log_intent(IntentPayload.model_validate(msg.payload), level=logging.INFO)
 
     @on_end_session()
     @on_continue_session()
@@ -20,5 +20,9 @@ class Logger(BaseCmd, LoggingMixin, SnipsClient):
         self.log_response(msg.payload.get("text"), level=logging.INFO)
 
 
-if __name__ == "__main__":  # demo code
+def main():
     Logger().run()
+
+
+if __name__ == "__main__":  # demo code
+    main()

@@ -6,11 +6,19 @@ import os
 import uuid
 from argparse import Namespace
 from functools import partial, wraps
-from typing import Any, Iterable, Self
+from typing import Any, Iterable
 
 import toml
 from decouple import config
+from typing_extensions import Self
 
+from .dialogue import (
+    ActionInit,
+    ContinueSession,
+    EndSession,
+    NotififationInit,
+    StartSession,
+)
 from .mqtt import MqttClient, MQTTv311, topic
 
 __all__ = (
@@ -25,6 +33,13 @@ __all__ = (
     "on_session_started",
     "on_start_session",
 )
+
+
+def serialize_custom_data(custom_data: Any) -> str | None:
+    if type(custom_data) in (dict, list, tuple):
+        return json.dumps(custom_data)
+    elif custom_data is not None:
+        return str(custom_data)
 
 
 class SnipsClient(MqttClient):
@@ -95,116 +110,97 @@ class SnipsClient(MqttClient):
         if username:
             password = common.get("mqtt_password")
 
-        cafile = common.get("mqtt_tls_cafile")
+        ca_file = common.get("mqtt_tls_cafile")
         cert = common.get("mqtt_tls_client_cert")
         key = None if not cert else common.get("mqtt_tls_client_key")
 
         self._tls_initialized = False
-        if cafile or cert or port == self.DEFAULT_TLS_PORT:
+        if ca_file or cert or port == self.DEFAULT_TLS_PORT:
             assert not common.get("mqtt_tls_hostname"), (
                 "mqtt_tls_hostname not supported"
             )
-            self.tls_set(ca_certs=cafile, certfile=cert, keyfile=key)
+            self.tls_set(ca_certs=ca_file, certfile=cert, keyfile=key)
             self._tls_initialized = True
 
         return super().connect(
             host=host, port=port, username=username, password=password
         )
 
-    # See: https://docs.snips.ai/reference/dialogue#session-initialization-action
-    def action_init(
-        self,
-        text: str | None = None,
-        intent_filter=[],
-        can_be_enqueued: bool = True,
-        send_intent_not_recognized: bool = False,
-    ) -> dict[str, Any]:
-        "Build the init part of action type to start a session"
-
-        init: dict[str, Any] = {"type": "action"}
-        if text:
-            init["text"] = str(text)
-        if not can_be_enqueued:
-            init["canBeEnqueued"] = False
-        if intent_filter:
-            init["intentFilter"] = intent_filter
-        if send_intent_not_recognized:
-            init["sendIntentNotRecognized"] = True
-        return init
-
-    # See: https://docs.snips.ai/reference/dialogue#session-initialization-notification
-    def notification_init(self, text: str) -> dict[str, Any]:
-        "Build the init part of notification type to start a session"
-        return {"type": "notification", "text": str(text)}
-
     # See: https://docs.snips.ai/reference/dialogue#start-session
     def start_session(
         self,
         site_id: str,
-        init: dict[str, Any],
-        custom_data: dict | None = None,
+        init: ActionInit | NotififationInit,
+        custom_data: Any = None,
         qos: int = 1,
         **kw,
     ) -> None:
         "End the session with an optional message"
-        payload = {"siteId": site_id, "init": init}
+        payload = StartSession(
+            site_id=site_id, init=init, custom_data=serialize_custom_data(custom_data)
+        )
 
-        if type(custom_data) in (dict, list, tuple):
-            payload["customData"] = json.dumps(custom_data)
-        elif custom_data is not None:
-            payload["customData"] = str(custom_data)
-
-        self.log.debug("Starting %s session on site '%s'", init.get("type"), site_id)
-        self.publish(self.START_SESSION, json.dumps(payload), qos=qos, **kw)
+        self.log.debug("Starting %s session on site '%s'", init.type, site_id)
+        self.publish(
+            self.START_SESSION,
+            payload.model_dump_json(exclude_none=True),
+            qos=qos,
+            **kw,
+        )
 
     def speak(self, site_id: str, text: str, **kw) -> None:
         "Say a one-time notification"
-        self.start_session(site_id, self.notification_init(text), **kw)
+        self.start_session(site_id, init=NotififationInit(text=text), **kw)
 
     # See: https://docs.snips.ai/reference/dialogue#end-session
     def end_session(
-        self, session_id: str, text: str | None = None, qos: int = 1, **kw
+        self,
+        session_id: str,
+        text: str | None = None,
+        qos: int = 1,
+        **kw,
     ) -> None:
         "End the session with an optional message"
-        payload = {"sessionId": session_id}
 
         if text:
             text = " ".join(text.split())
-            payload["text"] = text
 
+        payload = EndSession(session_id=session_id, text=text)
         self.log.debug("Ending session %s with '%s'", session_id, text)
-        self.publish(self.END_SESSION, json.dumps(payload), qos=qos, **kw)
+        self.publish(
+            self.END_SESSION, payload.model_dump_json(exclude_none=True), qos=qos, **kw
+        )
 
     # See: https://docs.snips.ai/reference/dialogue#continue-session
     def continue_session(
         self,
         session_id: str,
         text: str,
-        intent_filter=None,
+        intent_filter: list[str] | None = None,
         slot: str | None = None,
-        send_intent_not_recognized=False,
-        custom_data=None,
+        send_intent_not_recognized: bool = False,
+        custom_data: Any = None,
         qos: int = 1,
         **kw,
     ) -> None:
         "Continue the session with a question"
 
-        text = " ".join(text.split())
-        payload: dict[str, Any] = {"text": text, "sessionId": session_id}
-        if intent_filter:
-            payload["intentFilter"] = intent_filter
-        if slot:
-            payload["slot"] = slot
-        if send_intent_not_recognized:
-            payload["sendIntentNotRecognized"] = bool(send_intent_not_recognized)
-
-        if type(custom_data) in (dict, list, tuple):
-            payload["customData"] = json.dumps(custom_data)
-        elif custom_data is not None:
-            payload["customData"] = str(custom_data)
+        payload = ContinueSession(
+            text=" ".join(text.split()),
+            session_id=session_id,
+            intent_filter=intent_filter,
+            slot=slot,
+            send_intent_not_recognized=bool(send_intent_not_recognized),
+            custom_data=serialize_custom_data(custom_data),
+        )
 
         self.log.debug("Continuing session %s with '%s'", session_id, text)
-        self.publish(self.CONTINUE_SESSION, json.dumps(payload), qos=qos, **kw)
+        self.publish(
+            self.CONTINUE_SESSION,
+            payload.model_dump_json(exclude_none=True),
+            qos=qos,
+            **kw,
+        )
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
     def play_sound(
@@ -256,11 +252,13 @@ on_start_session = partial(
 )
 
 
-def on_intent(intent: str, qos: int = 0, log_level=logging.NOTSET):
+def on_intent(
+    intent: str, qos: int = 0, payload_converter=_load_json, log_level=logging.NOTSET
+):
     return topic(
         f"{SnipsClient.INTENT_PREFIX}{intent}",
         qos=qos,
-        payload_converter=_load_json,
+        payload_converter=payload_converter,
         log_level=log_level,
     )
 

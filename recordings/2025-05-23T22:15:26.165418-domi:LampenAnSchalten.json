@@ -1,0 +1,68 @@
+[
+  {
+    "time": "2025-05-23T22:15:26.165418",
+    "topic": "hermes/intent/domi:LampenAnSchalten",
+    "payload": {
+      "input": "schalte bitte das licht an",
+      "intent": {
+        "intentName": "domi:LampenAnSchalten",
+        "confidenceScore": 1.0
+      },
+      "siteId": "study",
+      "id": null,
+      "slots": [],
+      "sessionId": "study-default-ca9e242f-3488-4f0f-b7d2-caff4ecb9ee4",
+      "customData": "default",
+      "asrTokens": [
+        [
+          {
+            "value": "schalte",
+            "confidence": 1.0,
+            "rangeStart": 0,
+            "rangeEnd": 7,
+            "time": null
+          },
+          {
+            "value": "bitte",
+            "confidence": 1.0,
+            "rangeStart": 8,
+            "rangeEnd": 13,
+            "time": null
+          },
+          {
+            "value": "das",
+            "confidence": 1.0,
+            "rangeStart": 14,
+            "rangeEnd": 17,
+            "time": null
+          },
+          {
+            "value": "licht",
+            "confidence": 1.0,
+            "rangeStart": 18,
+            "rangeEnd": 23,
+            "time": null
+          },
+          {
+            "value": "an",
+            "confidence": 1.0,
+            "rangeStart": 24,
+            "rangeEnd": 26,
+            "time": null
+          }
+        ]
+      ],
+      "asrConfidence": 0.450572,
+      "rawInput": "schalte bitte das licht an",
+      "wakewordId": "default",
+      "lang": null
+    }
+  },
+  {
+    "time": "2025-05-23T22:15:26.170980",
+    "topic": "hermes/dialogueManager/endSession",
+    "payload": {
+      "sessionId": "study-default-ca9e242f-3488-4f0f-b7d2-caff4ecb9ee4"
+    }
+  }
+]

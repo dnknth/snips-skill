@@ -1,0 +1,123 @@
+[
+  {
+    "time": "2025-05-24T17:32:54.128408",
+    "topic": "hermes/intent/dnknth:SetTemperature",
+    "payload": {
+      "input": "stelle die heizung im Wohnzimmer auf 19 grad",
+      "intent": {
+        "intentName": "dnknth:SetTemperature",
+        "confidenceScore": 1.0
+      },
+      "siteId": "study",
+      "id": null,
+      "slots": [
+        {
+          "entity": "rooms",
+          "value": {
+            "kind": "Unknown",
+            "value": "Wohnzimmer"
+          },
+          "slotName": "location",
+          "rawValue": "wohnzimmer",
+          "confidence": 1.0,
+          "range": {
+            "start": 22,
+            "end": 32,
+            "rawStart": 22,
+            "rawEnd": 32
+          }
+        },
+        {
+          "entity": "rhasspy/number",
+          "value": {
+            "kind": "Number",
+            "value": 19
+          },
+          "slotName": "temperature",
+          "rawValue": "neunzehn",
+          "confidence": 1.0,
+          "range": {
+            "start": 37,
+            "end": 39,
+            "rawStart": 37,
+            "rawEnd": 45
+          }
+        }
+      ],
+      "sessionId": "study-default-9631b82a-bf14-4454-b155-52900ca66000",
+      "customData": "default",
+      "asrTokens": [
+        [
+          {
+            "value": "stelle",
+            "confidence": 1.0,
+            "rangeStart": 0,
+            "rangeEnd": 6,
+            "time": null
+          },
+          {
+            "value": "die",
+            "confidence": 1.0,
+            "rangeStart": 7,
+            "rangeEnd": 10,
+            "time": null
+          },
+          {
+            "value": "heizung",
+            "confidence": 1.0,
+            "rangeStart": 11,
+            "rangeEnd": 18,
+            "time": null
+          },
+          {
+            "value": "im",
+            "confidence": 1.0,
+            "rangeStart": 19,
+            "rangeEnd": 21,
+            "time": null
+          },
+          {
+            "value": "Wohnzimmer",
+            "confidence": 1.0,
+            "rangeStart": 22,
+            "rangeEnd": 32,
+            "time": null
+          },
+          {
+            "value": "auf",
+            "confidence": 1.0,
+            "rangeStart": 33,
+            "rangeEnd": 36,
+            "time": null
+          },
+          {
+            "value": "19",
+            "confidence": 1.0,
+            "rangeStart": 37,
+            "rangeEnd": 39,
+            "time": null
+          },
+          {
+            "value": "grad",
+            "confidence": 1.0,
+            "rangeStart": 40,
+            "rangeEnd": 44,
+            "time": null
+          }
+        ]
+      ],
+      "asrConfidence": 0.99501552,
+      "rawInput": "stelle die heizung im wohnzimmer auf neunzehn grad",
+      "wakewordId": "default",
+      "lang": null
+    }
+  },
+  {
+    "time": "2025-05-24T17:32:54.128659",
+    "topic": "hermes/dialogueManager/endSession",
+    "payload": {
+      "sessionId": "study-default-9631b82a-bf14-4454-b155-52900ca66000",
+      "text": "Es sind 19 Grad eingestellt."
+    }
+  }
+]

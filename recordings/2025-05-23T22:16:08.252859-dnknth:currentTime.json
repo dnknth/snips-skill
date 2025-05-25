@@ -1,0 +1,62 @@
+[
+  {
+    "time": "2025-05-23T22:16:08.252859",
+    "topic": "hermes/intent/dnknth:currentTime",
+    "payload": {
+      "input": "wie spät ist es",
+      "intent": {
+        "intentName": "dnknth:currentTime",
+        "confidenceScore": 1.0
+      },
+      "siteId": "study",
+      "id": null,
+      "slots": [],
+      "sessionId": "study-default-3870577c-bd6e-4e9b-802f-2ac4a48078bd",
+      "customData": "default",
+      "asrTokens": [
+        [
+          {
+            "value": "wie",
+            "confidence": 1.0,
+            "rangeStart": 0,
+            "rangeEnd": 3,
+            "time": null
+          },
+          {
+            "value": "spät",
+            "confidence": 1.0,
+            "rangeStart": 4,
+            "rangeEnd": 8,
+            "time": null
+          },
+          {
+            "value": "ist",
+            "confidence": 1.0,
+            "rangeStart": 9,
+            "rangeEnd": 12,
+            "time": null
+          },
+          {
+            "value": "es",
+            "confidence": 1.0,
+            "rangeStart": 13,
+            "rangeEnd": 15,
+            "time": null
+          }
+        ]
+      ],
+      "asrConfidence": 0.999661381,
+      "rawInput": "wie spät ist es",
+      "wakewordId": "default",
+      "lang": null
+    }
+  },
+  {
+    "time": "2025-05-23T22:16:08.257137",
+    "topic": "hermes/dialogueManager/endSession",
+    "payload": {
+      "sessionId": "study-default-3870577c-bd6e-4e9b-802f-2ac4a48078bd",
+      "text": "Es ist 10 Uhr und 16 Minuten nachts."
+    }
+  }
+]

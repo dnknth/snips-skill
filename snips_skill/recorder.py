@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from argparse import ArgumentTypeError, FileType
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 from basecmd import BaseCmd
 from colors import cyan, green, red
 
+from .dialogue import ActionInit
 from .log import LoggingMixin
 from .snips import (
     SnipsClient,
@@ -60,7 +62,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
         return FileType("r")(path)
 
     def on_connect(self, client, userdata, flags, rc):
-        super().on_connect(client, userdata, flags, rc)
+        super().on_connect(client, userdata, flags, rc)  # pyright: ignore[reportOptionalCall]
 
         if self.options.log_dir:  # Start recording
             if not self.options.log_dir.is_dir():
@@ -77,7 +79,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
         with self.options.tests.pop(0) as test:
             self.test = json.load(test)
         site_id = self.test[0].get("payload", {}).get("siteId")
-        self.start_session(site_id, self.action_init())
+        self.start_session(site_id, ActionInit())
 
     @on_session_started()
     def _on_start(self, userdata, msg):
@@ -179,8 +181,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
         if self.events:
             event = self.events[0]
             intent = event["topic"].replace(self.INTENT_PREFIX, "")
-            file_name = "%s-%s.json" % (event["time"], intent)
-            path = self.options.log_dir / file_name
+            path = self.options.log_dir / f"{event['time']}-{intent}.json"
             self.log.info("Logging session to %s", path)
             with open(path, "w") as out:
                 json.dump(self.events, out, ensure_ascii=False, indent=2)
@@ -191,9 +192,11 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
             self.disconnect()
 
 
-if __name__ == "__main__":
-    import sys
-
+def main():
     client = Recorder()
     client.run()
     sys.exit(client.failures)
+
+
+if __name__ == "__main__":
+    main()

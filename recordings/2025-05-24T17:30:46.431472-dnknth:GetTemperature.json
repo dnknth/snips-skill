@@ -1,0 +1,93 @@
+[
+  {
+    "time": "2025-05-24T17:30:46.431472",
+    "topic": "hermes/intent/dnknth:GetTemperature",
+    "payload": {
+      "input": "wie warm ist es im Wohnzimmer",
+      "intent": {
+        "intentName": "dnknth:GetTemperature",
+        "confidenceScore": 1.0
+      },
+      "siteId": "study",
+      "id": null,
+      "slots": [
+        {
+          "entity": "rooms",
+          "value": {
+            "kind": "Unknown",
+            "value": "Wohnzimmer"
+          },
+          "slotName": "location",
+          "rawValue": "wohnzimmer",
+          "confidence": 1.0,
+          "range": {
+            "start": 19,
+            "end": 29,
+            "rawStart": 19,
+            "rawEnd": 29
+          }
+        }
+      ],
+      "sessionId": "study-default-f0f4aabb-e3f1-42c4-bce1-835d73cc371d",
+      "customData": "default",
+      "asrTokens": [
+        [
+          {
+            "value": "wie",
+            "confidence": 1.0,
+            "rangeStart": 0,
+            "rangeEnd": 3,
+            "time": null
+          },
+          {
+            "value": "warm",
+            "confidence": 1.0,
+            "rangeStart": 4,
+            "rangeEnd": 8,
+            "time": null
+          },
+          {
+            "value": "ist",
+            "confidence": 1.0,
+            "rangeStart": 9,
+            "rangeEnd": 12,
+            "time": null
+          },
+          {
+            "value": "es",
+            "confidence": 1.0,
+            "rangeStart": 13,
+            "rangeEnd": 15,
+            "time": null
+          },
+          {
+            "value": "im",
+            "confidence": 1.0,
+            "rangeStart": 16,
+            "rangeEnd": 18,
+            "time": null
+          },
+          {
+            "value": "Wohnzimmer",
+            "confidence": 1.0,
+            "rangeStart": 19,
+            "rangeEnd": 29,
+            "time": null
+          }
+        ]
+      ],
+      "asrConfidence": 1.0,
+      "rawInput": "wie warm ist es im wohnzimmer",
+      "wakewordId": "default",
+      "lang": null
+    }
+  },
+  {
+    "time": "2025-05-24T17:30:46.437645",
+    "topic": "hermes/dialogueManager/endSession",
+    "payload": {
+      "sessionId": "study-default-f0f4aabb-e3f1-42c4-bce1-835d73cc371d",
+      "text": "Es sind 16,5 Grad."
+    }
+  }
+]

@@ -83,10 +83,10 @@ def intent(
     """
 
     def wrapper(method):
-        @on_intent(intent, qos=qos)
+        @on_intent(intent, qos=qos, payload_converter=None)
         @wraps(method)
         def wrapped(client, userdata, msg):
-            msg.payload = IntentPayload(msg.payload)
+            msg.payload = IntentPayload.model_validate_json(msg.payload)
             if log_level:
                 client.log_intent(msg.payload, level=log_level)
             try:

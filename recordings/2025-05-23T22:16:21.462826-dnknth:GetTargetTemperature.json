@@ -1,0 +1,76 @@
+[
+  {
+    "time": "2025-05-23T22:16:21.462826",
+    "topic": "hermes/intent/dnknth:GetTargetTemperature",
+    "payload": {
+      "input": "wie hoch ist die heizung eingestellt",
+      "intent": {
+        "intentName": "dnknth:GetTargetTemperature",
+        "confidenceScore": 1.0
+      },
+      "siteId": "study",
+      "id": null,
+      "slots": [],
+      "sessionId": "study-default-b2d00161-aaa1-4e15-9f9f-2778f182651e",
+      "customData": "default",
+      "asrTokens": [
+        [
+          {
+            "value": "wie",
+            "confidence": 1.0,
+            "rangeStart": 0,
+            "rangeEnd": 3,
+            "time": null
+          },
+          {
+            "value": "hoch",
+            "confidence": 1.0,
+            "rangeStart": 4,
+            "rangeEnd": 8,
+            "time": null
+          },
+          {
+            "value": "ist",
+            "confidence": 1.0,
+            "rangeStart": 9,
+            "rangeEnd": 12,
+            "time": null
+          },
+          {
+            "value": "die",
+            "confidence": 1.0,
+            "rangeStart": 13,
+            "rangeEnd": 16,
+            "time": null
+          },
+          {
+            "value": "heizung",
+            "confidence": 1.0,
+            "rangeStart": 17,
+            "rangeEnd": 24,
+            "time": null
+          },
+          {
+            "value": "eingestellt",
+            "confidence": 1.0,
+            "rangeStart": 25,
+            "rangeEnd": 36,
+            "time": null
+          }
+        ]
+      ],
+      "asrConfidence": 0.99654783,
+      "rawInput": "wie hoch ist die heizung eingestellt",
+      "wakewordId": "default",
+      "lang": null
+    }
+  },
+  {
+    "time": "2025-05-23T22:16:21.468021",
+    "topic": "hermes/dialogueManager/endSession",
+    "payload": {
+      "sessionId": "study-default-b2d00161-aaa1-4e15-9f9f-2778f182651e",
+      "text": "Es sind 19 Grad eingestellt."
+    }
+  }
+]

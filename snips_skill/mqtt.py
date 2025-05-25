@@ -7,14 +7,19 @@ Simplistic wrapper for the Paho MQTT client.
 import json
 import logging
 import sys
+from datetime import datetime
 from functools import wraps
 from getpass import getpass
+from shutil import get_terminal_size
 from types import FunctionType
-from typing import Any, Callable, Self, Tuple
+from typing import Any, Callable, Tuple
 
 from basecmd import BaseCmd
+from colors import cyan
 from paho.mqtt.client import Client as PahoClient
 from paho.mqtt.client import MQTTMessageInfo, MQTTv311
+from pydantic import BaseModel
+from typing_extensions import Self
 
 __all__ = ("MqttClient", "topic", "CommandLineClient", "decode_json")
 
@@ -25,6 +30,12 @@ def decode_json(payload) -> Any:
         return json.loads(payload)
     except ValueError:
         return payload
+
+
+class MqttMessage(BaseModel):
+    time: datetime
+    topic: str
+    payload: Any
 
 
 class MqttClient(PahoClient):
@@ -134,7 +145,7 @@ class MqttClient(PahoClient):
 def topic(
     topic: str,
     qos: int = 0,
-    payload_converter: Callable | None = None,
+    payload_converter: Callable[[bytes], Any] | None = None,
     log_level: int = logging.NOTSET,
 ):
     """Decorator for callback functions.
@@ -226,51 +237,50 @@ class CommandLineClient(BaseCmd, MqttClient):
         self.run()
 
 
-if __name__ == "__main__":  # Demo code
-    from shutil import get_terminal_size
+class Logger(CommandLineClient):
+    WIDTH = get_terminal_size().columns
+    COLOR = cyan if sys.stderr.isatty() else str
 
-    from colors import cyan
+    def add_arguments(self):
+        super().add_arguments()
+        self.parser.add_argument(
+            "-t", "--topic", default="#", help="MQTT topic (default: #)"
+        )
+        self.parser.add_argument(
+            "-w",
+            "--width",
+            default=self.WIDTH,
+            type=int,
+            help="Output width (default: %d)" % self.WIDTH,
+        )
+        self.parser.add_argument(
+            "-j", "--json", action="store_true", help="Try to decode JSON payloads"
+        )
+        self.parser.add_argument(
+            "-z", "--clear", action="store_true", help="Clear retained messages"
+        )
 
-    class Logger(CommandLineClient):
-        WIDTH = get_terminal_size().columns
-        COLOR = cyan if sys.stderr.isatty() else str
-
-        def add_arguments(self):
-            super().add_arguments()
-            self.parser.add_argument(
-                "-t", "--topic", default="#", help="MQTT topic (default: #)"
-            )
-            self.parser.add_argument(
-                "-w",
-                "--width",
-                default=self.WIDTH,
-                type=int,
-                help="Output width (default: %d)" % self.WIDTH,
-            )
-            self.parser.add_argument(
-                "-j", "--json", action="store_true", help="Try to decode JSON payloads"
-            )
-            self.parser.add_argument(
-                "-z", "--clear", action="store_true", help="Clear retained messages"
-            )
-
-        def print_msg(self, _userdata, msg):
-            if self.options.json:
-                payload = decode_json(msg.payload)
-                if type(payload) is dict:
-                    payload = json.dumps(payload, sort_keys=True, indent=2)
-                else:
-                    payload = str(payload)
-                self.log.info("%s: %s", self.COLOR(msg.topic), payload)
+    def print_msg(self, _userdata, msg):
+        if self.options.json:
+            payload = decode_json(msg.payload)
+            if type(payload) is dict:
+                payload = json.dumps(payload, sort_keys=True, indent=2)
             else:
-                width = self.options.width - len(msg.topic) - 2
-                self.log.info(
-                    "%s: %.*a", self.COLOR(msg.topic), width, str(msg.payload)
-                )
+                payload = str(payload)
+            self.log.info("%s: %s", self.COLOR(msg.topic), payload)
+        else:
+            width = self.options.width - len(msg.topic) - 2
+            self.log.info("%s: %.*a", self.COLOR(msg.topic), width, str(msg.payload))
 
-            if self.options.clear and msg.retain and msg.payload:
-                self.publish(msg.topic, retain=True)
+        if self.options.clear and msg.retain and msg.payload:
+            self.publish(msg.topic, retain=True)
 
+
+def main():
     client = Logger()
     topic(client.options.topic)(client.print_msg)
     client.run()
+
+
+if __name__ == "__main__":  # Demo code
+    main()

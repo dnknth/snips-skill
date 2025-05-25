@@ -4,22 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "snips-skill"
-authors = [{name = "dnknth"}]
+authors = [{ name = "dnknth" }]
 description = "Boilerplate for Snips skills in Python3"
 license = "MIT"
+requires-python = ">=3.10"
 classifiers = [
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3 :: Only",
     "Topic :: Software Development :: Libraries",
 ]
-urls = {Homepage = "https://github.com/dnknth/snips-skill"}
+urls = { Homepage = "https://github.com/dnknth/snips-skill" }
 dependencies = [
     "basecmd",
     "croniter",
     "paho-mqtt==1.4.*",
     "ply==3.*",
+    "pydantic",
     "toml",
 ]
 dynamic = ["version"]
@@ -30,10 +31,15 @@ content-type = "text/markdown"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["snips_skill", "snips_skill.locale", "snips_skill.locale.de", "snips_skill.locale.de.LC_MESSAGES" ]
+packages = [
+    "snips_skill",
+    "snips_skill.locale",
+    "snips_skill.locale.de",
+    "snips_skill.locale.de.LC_MESSAGES",
+]
 
 [tool.setuptools.dynamic]
-version = {attr = "snips_skill.__version__"}
+version = { attr = "snips_skill.__version__" }
 
 [tool.extract_messages]
 add_comments = "TRANSLATOR:"
@@ -55,3 +61,11 @@ domain = "snips_skill"
 input_file = "snips_skill/locale/snips_skill.pot"
 output_dir = "snips_skill/locale"
 domain = "snips_skill"
+
+[project.scripts]
+intent-log = "snips_skill.__main__:main"
+mqtt-log = "snips_skill.mqtt:main"
+recorder = "snips_skill.recorder:main"
+
+[tool.uv]
+package = true

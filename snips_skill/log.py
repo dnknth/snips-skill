@@ -46,7 +46,7 @@ class LoggingMixin:
         )
         for k in ("site_id", "input"):
             self.tabular_log(level, k, getattr(payload, k), color=cyan)
-        for name, slot in payload.slots.items():
+        for name, slot in payload.slot_values.items():
             self.tabular_log(level, name, slot.value, color=magenta)
         if payload.custom_data:
             self.tabular_log(level, "data", payload.custom_data, color=yellow)
