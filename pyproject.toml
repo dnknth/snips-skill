@@ -18,7 +18,7 @@ urls = { Homepage = "https://github.com/dnknth/snips-skill" }
 dependencies = [
     "basecmd",
     "croniter",
-    "paho-mqtt==1.4.*",
+    "paho-mqtt>=1.4,<2.2",
     "ply==3.*",
     "pydantic",
     "toml",
