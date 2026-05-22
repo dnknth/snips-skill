@@ -24,7 +24,7 @@ class StateAwareMixin:
     log: logging.Logger
     conditions: dict[Parser.Expr, Callable] = {}
     expr_parser = Parser()
-    update_log_level = logging.INFO
+    update_log_level = logging.DEBUG
 
     def __init__(self, **kw):
         "Register topics and the state callcack."

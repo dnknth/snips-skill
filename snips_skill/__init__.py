@@ -1,7 +1,7 @@
 from .exceptions import SnipsClarificationError, SnipsError
 from .i18n import CONFIRMATIONS, get_translations
 from .log import LoggingMixin
-from .mqtt import CommandLineClient, MqttClient, topic
+from .mqtt import CommandLineClient, MqttClient, decode_json, topic
 from .multi_room import ROOMS, MultiRoomConfig, room_with_article, room_with_preposition
 from .skill import PARDON, Skill, intent, min_confidence, require_slot
 from .snips import (
@@ -19,7 +19,7 @@ from .snips import (
 from .state import StateAwareMixin, conditional, when
 from .tasks import Scheduler, cron, delay, now
 
-__version__ = "0.1.28"
+__version__ = "0.1.31"
 
 __all__ = (
     "CommandLineClient",
@@ -27,6 +27,7 @@ __all__ = (
     "CONFIRMATIONS",
     "cron",
     "debug_json",
+    "decode_json",
     "delay",
     "get_translations",
     "intent",
