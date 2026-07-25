@@ -16,7 +16,7 @@ recordings:
 	uv run recorder -d $@ --loop
 
 test:
-	.venv/bin/python3 -m unittest discover snips_skill
+	.venv/bin/python3 -m unittest discover -s tests
 
 messages: $(POT)
 
@@ -36,7 +36,7 @@ dist: pyproject.toml .venv $(LOCALE:.po=.mo) $(POT)
 	uv build
 	
 pypi: clean dist
-	uv publish dist/*
+	uv publish --token `pass token/pypi.org` dist/*
 
 .venv:
 	uv sync

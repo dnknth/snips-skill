@@ -1,8 +1,9 @@
 import logging
+from collections.abc import Callable
 from functools import partial, wraps
 from pprint import pformat
 from signal import SIGUSR1, signal
-from typing import Any, Callable
+from typing import Any, ClassVar
 
 from paho.mqtt.client import MQTTMessageInfo
 
@@ -22,17 +23,17 @@ class StateAwareMixin:
     """
 
     log: logging.Logger
-    conditions: dict[Parser.Expr, Callable] = {}
+    conditions: ClassVar[dict[Parser.Expr, Callable]] = {}
     expr_parser = Parser()
     update_log_level = logging.DEBUG
 
     def __init__(self, **kw):
         "Register topics and the state callcack."
 
-        super(StateAwareMixin, self).__init__(**kw)
+        super().__init__(**kw)
         self.current_state = {}
 
-        status_topic: str = self.get_config().get("status_topic")  # pyright: ignore[reportAttributeAccessIssue]
+        status_topic: str = self.get_config("global").get("status_topic")  # pyright: ignore[reportAttributeAccessIssue]
         assert status_topic, "status_topic not found in configuration"
 
         # Subscribe to status updates
@@ -85,7 +86,7 @@ class StateAwareMixin:
             try:
                 if cast(payload) == old_state:
                     return
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
         return super().publish(topic, payload, qos, retain, log_level)  # pyright: ignore[reportAttributeAccessIssue]
 

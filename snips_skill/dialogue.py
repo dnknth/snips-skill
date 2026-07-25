@@ -17,7 +17,7 @@ class ActionInit(
     send_intent_not_recognized: bool = False
 
 
-class NotififationInit(BaseModel):
+class NotificationInit(BaseModel):
     "Start a session with a notification"
 
     # See: https://docs.snips.ai/reference/dialogue#session-initialization-notification
@@ -32,7 +32,7 @@ class StartSession(
 
     # See: https://docs.snips.ai/reference/dialogue#start-session
     site_id: str
-    init: ActionInit | NotififationInit = Field(discriminator="type")
+    init: ActionInit | NotificationInit = Field(discriminator="type")
     custom_data: str | None = None
 
 

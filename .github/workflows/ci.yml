@@ -5,27 +5,15 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install basecmd croniter \
-            'paho-mqtt==1.4.*' 'ply==3.*' pydantic \
-            setuptools toml
-
-          pip install unittest-xml-reporting
+          version: "latest"
       - name: Run tests
         run: |
-          python -m xmlrunner discover snips_skill
+          uv run -w unittest-xml-reporting -m xmlrunner discover -s tests
       - name: Publish test results
         uses: dorny/test-reporter@v1
         with:

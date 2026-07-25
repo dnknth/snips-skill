@@ -6,13 +6,15 @@ Simplistic wrapper for the Paho MQTT client.
 
 import json
 import logging
+import ssl
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
 from getpass import getpass
 from shutil import get_terminal_size
 from types import FunctionType
-from typing import Any, Callable, Tuple
+from typing import Any, ClassVar
 
 from basecmd import BaseCmd
 from colors import cyan
@@ -21,14 +23,14 @@ from paho.mqtt.client import MQTTMessageInfo, MQTTv311
 from pydantic import BaseModel
 from typing_extensions import Self
 
-__all__ = ("MqttClient", "topic", "CommandLineClient", "decode_json")
+__all__ = ("CommandLineClient", "MqttClient", "decode_json", "topic")
 
 
 def decode_json(payload) -> Any:
     "Try to decode a message payload as JSON"
     try:
         return json.loads(payload)
-    except ValueError:
+    except (TypeError, ValueError):
         return payload
 
 
@@ -45,7 +47,7 @@ class MqttClient(PahoClient):
     WEBSOCKETS = "websockets"
     DEFAULT_PORT = 1883
     DEFAULT_TLS_PORT = 8883
-    SUBSCRIPTIONS: dict[str, Tuple[Callable, int]] = {}
+    SUBSCRIPTIONS: ClassVar[dict[str, tuple[Callable, int]]] = {}
 
     _tls_initialized: bool = False
     log: logging.Logger
@@ -58,7 +60,7 @@ class MqttClient(PahoClient):
         protocol: int = MQTTv311,
         transport: str = TCP,
     ):
-        super(MqttClient, self).__init__(
+        super().__init__(
             client_id, clean_session or not client_id, userdata, protocol, transport
         )
         self._tls_initialized = False
@@ -96,9 +98,10 @@ class MqttClient(PahoClient):
 
         if username:
             self.username_pw_set(username, password)
-        if use_tls or port == self.DEFAULT_TLS_PORT:
-            if not self._tls_initialized:
-                self.tls_set()
+        if not self._tls_initialized and (use_tls or port == self.DEFAULT_TLS_PORT):
+            self._tls_initialized = True
+            context = ssl.create_default_context()
+            self.tls_set_context(context)
         if username:
             self.log.debug("Connecting to MQTT broker %s as user '%s'", host, username)
         else:
@@ -122,7 +125,7 @@ class MqttClient(PahoClient):
         except KeyboardInterrupt:
             self.log.info("Interrupted by user")
 
-    def subscribe(self, topic: str, qos: int = 0) -> Tuple:
+    def subscribe(self, topic: str, qos: int = 0) -> tuple:
         "Subscribe to a MQTT topic"
         result = super().subscribe(topic, qos)
         self.log.debug("Subscribed to MQTT topic: %s", topic)
@@ -151,8 +154,8 @@ def topic(
     """Decorator for callback functions.
     Callbacks are invoked with these positional parameters:
      - client: MqttClient instance
-     - msg: MQTT message
      - userdata: User-defined extra data
+     - msg: MQTT message
     Return values are not expected.
     :param topic: MQTT topic, may contain wildcards
     :param qos: MQTT quality of service (default: 0)
@@ -189,6 +192,14 @@ class CommandLineClient(BaseCmd, MqttClient):
 
     password = None
 
+    def __init__(
+        self, client_id: str = "", clean_session: bool = True, userdata=None
+    ) -> None:
+        # Work around a Paho cleanup bug if called with -h or illegal args
+        self._sock = self._sockpairR = self._sockpairW = None
+        super().__init__()
+        MqttClient.__init__(self, client_id, clean_session, userdata)
+
     def add_arguments(self) -> None:
         "Set up arguments for connection parameters"
         self.parser.add_argument(
@@ -199,7 +210,7 @@ class CommandLineClient(BaseCmd, MqttClient):
             "--port",
             default=MqttClient.DEFAULT_PORT,
             type=int,
-            help="MQTT port (default: %d)" % MqttClient.DEFAULT_PORT,
+            help=f"MQTT port (default: {MqttClient.DEFAULT_PORT})",
         )
         self.parser.add_argument(
             "-T", "--tls", action="store_true", default=False, help="Use TLS"
@@ -227,7 +238,7 @@ class CommandLineClient(BaseCmd, MqttClient):
                 use_tls=self.options.tls,
             ):
                 self.loop_forever()
-        except:
+        except Exception:
             if self.options.log_file:
                 self.log.exception("Fatal error")
             raise
@@ -251,7 +262,7 @@ class Logger(CommandLineClient):
             "--width",
             default=self.WIDTH,
             type=int,
-            help="Output width (default: %d)" % self.WIDTH,
+            help=f"Output width (default: {self.WIDTH})",
         )
         self.parser.add_argument(
             "-j", "--json", action="store_true", help="Try to decode JSON payloads"

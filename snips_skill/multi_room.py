@@ -1,5 +1,5 @@
+from collections.abc import Callable, MutableMapping
 from configparser import ConfigParser
-from typing import Callable, MutableMapping
 
 from .exceptions import SnipsClarificationError, SnipsError
 from .i18n import (
@@ -14,7 +14,7 @@ from .i18n import (
 from .intent import IntentPayload
 from .skill import Skill
 
-__all__ = ("MultiRoomConfig", "ROOMS", "room_with_article", "room_with_preposition")
+__all__ = ("ROOMS", "MultiRoomConfig", "room_with_article", "room_with_preposition")
 
 _, ngettext = get_translations(__file__, "snips_skill")
 
