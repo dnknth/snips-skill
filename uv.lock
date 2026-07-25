@@ -22,15 +22,15 @@ wheels = [
 
 [[package]]
 name = "basecmd"
-version = "0.1.8"
+version = "0.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansicolors" },
     { name = "python-decouple" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/08/f3f94df98810aa5139c3353f93e1f91f82f95e629549f79476d587a640cd/basecmd-0.1.8.tar.gz", hash = "sha256:3fc86bcccfa85e620723adcbdfb994e81514d44b7bd5a6fb69aae0807f6cfb9a", size = 3796, upload-time = "2026-05-22T17:54:59.46Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/09/4bb7a73eb36e61ce1f81304e28439653c8bda394bbc77e05726dcbe96568/basecmd-0.1.9.tar.gz", hash = "sha256:1ba26d60e92d4e697c1868a5b9f599a31e7c17a5c826926e009997bf4593a2f1", size = 3723, upload-time = "2026-07-25T17:54:30.713Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/30/3b61d329f4e0596a8959bf1e3ceee945030f614f09dfbfaf4e993c6a2e3e/basecmd-0.1.8-py3-none-any.whl", hash = "sha256:76e7d3981ac8814004a76ebd1516d52a603e730989f8d533a5e9307a32716f46", size = 4335, upload-time = "2026-05-22T17:55:00.667Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/49/c87d69e4fb17aa71d5ac6e4485f103a600ff56252c6a3b150a06dcf4e305/basecmd-0.1.9-py3-none-any.whl", hash = "sha256:7faa335aeff1d4235df50386d01b0c89058dbb2b831bc732769c492166b5ce73", size = 4281, upload-time = "2026-07-25T17:54:29.646Z" },
 ]
 
 [[package]]
