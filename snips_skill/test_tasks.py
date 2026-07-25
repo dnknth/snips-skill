@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 
-from tasks import Tasks
+from snips_skill.tasks import Tasks
 
 
 def at(hour, minute=0):

@@ -36,7 +36,7 @@ dist: pyproject.toml .venv $(LOCALE:.po=.mo) $(POT)
 	uv build
 	
 pypi: clean dist
-	uv publish dist/*
+	uv publish --token `pass token/pypi.org` dist/*
 
 .venv:
 	uv sync

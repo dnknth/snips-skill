@@ -1,6 +1,6 @@
 import unittest
 
-from expr import Parser
+from snips_skill.expr import Parser
 
 
 class ExprTest(unittest.TestCase):

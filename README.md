@@ -7,38 +7,40 @@ They were bought by [Sonos](https://www.sonos.com/) and discontinued all service
 Snips also created the [Hermes](https://github.com/snipsco/hermes-protocol) MQTT protocol,
 which is compatible with the [Rhasspy](https://github.com/rhasspy/rhasspy) voice assistant.
 
-A 'skill' (in Snips parlance) is an MQTT client that may read sensors,
+A "skill" (in Snips parlance) is an MQTT client that may read sensors,
 do computations, or trigger devices.
+
+## Installation
+
+```sh
+pip install snips-skill
+```
+
+Requires Python 3.10+. Dependencies: `paho-mqtt`, `pydantic`, `ply`, `croniter`, `toml`, `basecmd`, `decouple`.
 
 ## Contents
 
-- `MqttClient`: A thin wrapper around [paho-mqtt](https://www.eclipse.org/paho/clients/python/docs/)
-- `CommandLineClient` skeleton MQTT command line client with connection settings.
-- `SnipsClient`: Reads connection parameters from `/etc/snips/toml`
-- Snips-specific decorators for callbacks, see below.
-- `MultiRoomConfig`: Utilities for multi-room setups.
-- `Skill`: Base class for Snips actions.
-- `@intent` decorator, see below.
-- `StateAwareMixin` with `@when` and `@conditional` decorators for stateful MQTT clients.
+- **Clients**: `MqttClient`, `CommandLineClient`, `SnipsClient`, `Skill`
+- **Decorators**: `@topic`, `@intent`, `@min_confidence`, `@require_slot`, `@on_*` session events
+- **State tracking**: `StateAwareMixin`, `@when`, `@conditional`
+- **Scheduling**: `Scheduler`, `@cron`, `@delay`
+- **Multi-room**: `MultiRoomConfig`
+- **i18n**: `get_translations`, `room_with_article`, `room_with_preposition`
+- **Utilities**: `expr` (boolean expression parser)
+
+---
 
 ## Plain MQTT clients
 
-Plain MQTT is supported via the `MqttClient` and `CommandLineClient` classes
-and the `@topic` decorator.
+`MqttClient` is a thin wrapper around [paho-mqtt](https://www.eclipse.org/paho/clients/python/docs/).
+`CommandLineClient` adds argument parsing for connection settings (`-H`, `-P`, `-T`, `-u`, `-p`) and standard logging.
 
-A `CommandLineClient` provides argument parsing for connection parameters and includes
-standard logging. For message handling, define a function or method as
-above, and decorate it with `@topic`. This registers the method (or function)
-as a callback for the given MQTT topic.
-
-### Usage example
+### Usage
 
 ```python
 from snips_skill import CommandLineClient, topic
 
 class Logger(CommandLineClient):
-    'Log all incoming MQTT messages'
-    
     @topic('#')
     def print_msg(self, userdata, msg):
         self.log.info("%s: %s", msg.topic, msg.payload[:64])
@@ -47,98 +49,284 @@ if __name__ == '__main__':
     Logger().run()
 ```
 
-## Snips session event decorators
+### `@topic` decorator
 
-The `Skill` class provides automatic connection configuration via `/etc/snips/toml`.
-Also, the following Snips-specific decorators for session events are provided:
-
-- `on_intent`: Handle intents,
-- `on_intent_not_recognized`: Handle unknown intents,
-- `on_start_session`: Called before session start,
-- `on_continue_session`: Called for subsequent session prompts,
-- `on_session_started`: Called at session start,
-- `on_end_session`: Called before session end,
-- `on_session_ended`: Called at session end.
-
-All decorators can be used either on standalone callback functions,
-or on methods of the various client classes (including `Skill`).
-
-Methods should expect the parameters `self, userdata, msg`, and
-standalone functions should expect `client, userdata, msg`.
-
-Multiple decorators on the same method are possible,
-but if they have inconsistent `qos` values, the results will be unpredictable.
-Also note that multiple decorators will produce repetitive log lines
-with `DEBUG` level. Set `log_level=None` on all but one decorator to fix it.
-
-## The `@intent` decorator
-
-`@intent`-decorated callbacks receive `msg.paylod`
-as an `IntentPayload` object, a parsed version of the JSON intent data.
-Slot values are converted to appropriate Python types.
-
-The next step in the Snips session depends on the outcome of the decorated function or method:
-
-- If the function returns a string or raises a `SnipsError`, the session ends with a message,
-- If it returns en empty string, the session is ended silently.
-- If it raises a `SnipsClarificationError`, the session is continued with a question. This can be used to narrow down parameters or to implement question-and-answer sequences.
-
-To require a minimum level of confidence for an intent,
-put `@min_confidence` below `@intent`.
-
-To ensure that certain slots are present in the intent,
-put `@require_slot` with a slot name below `@intent`.
-
-The `@intent` decorator should not be used in combination with any `on_*` decorators.
-
-### Example usage
+Registers a callback for an MQTT topic (supports wildcards). Methods receive `(self, userdata, msg)`; standalone functions receive `(client, userdata, msg)`.
 
 ```python
-from snips_skill import intent, Skill
+@topic("hermes/intent/#", qos=0, payload_converter=decode_json)
+def handler(client, userdata, msg):
+    ...
+```
+
+---
+
+## Snips clients
+
+### `SnipsClient`
+
+Reads connection parameters from `/etc/snips.toml` (or `$SNIPS_CONFIG`). Provides session lifecycle methods:
+
+| Method | Description |
+|--------|-------------|
+| `start_session(site_id, init)` | Start a session (action or notification) |
+| `speak(site_id, text)` | Say a one-time notification |
+| `end_session(session_id, text)` | End the session with an optional message |
+| `continue_session(session_id, text, ...)` | Continue with a question |
+| `play_sound(site_id, wav_data)` | Play a WAV sound |
+| `register_sound(name, wav_data)` | Register a TTS sound |
+
+### `Skill`
+
+Base class for Snips actions. Extends `SnipsClient` with `config.ini` support:
+
+```python
+from snips_skill import Skill, intent
 
 class HelloSkill(Skill):
-    'Snips skill to say hello'
-    
     @intent('example:hello')
     def say_hello(self, userdata, msg):
         return 'Hello, there'
-        
+
 if __name__ == '__main__':
     HelloSkill().run()
 ```
 
-## `StateAwareMixin`, `@when` and `@conditional` decorators
+---
 
-These define actions triggered by state changes on MQTT.
-Example: _Sensor registers motion -> switch the light on_
+## Session event decorators
 
-Clients can use `StateAwareMixin` to track the last known state
-of relevant topics. For that, a `status_topic` needs to be configured
-in the global section of `config.ini`.
-Topics and payloads are kept in `self.current_state`.
+All decorators can be used on methods (expect `self, userdata, msg`) or standalone functions (expect `client, userdata, msg`). Multiple decorators on the same method are supported; set `log_level=None` on all but one to avoid duplicate logs.
 
-Change handlers should be decorated with either `@when` or `@conditional`.
-The former triggers the handler whenever a boolean condition on the current
-state is fulfilled, the latter whenever a MQTT topic relevant for the given boolean condition changes.
+| Decorator | Topic |
+|-----------|-------|
+| `@on_intent("intent_name")` | `hermes/intent/...` |
+| `@on_start_session()` | `hermes/dialogueManager/startSession` |
+| `@on_session_started()` | `hermes/dialogueManager/sessionStarted` |
+| `@on_continue_session()` | `hermes/dialogueManager/continueSession` |
+| `@on_end_session()` | `hermes/dialogueManager/endSession` |
+| `@on_session_ended()` | `hermes/dialogueManager/sessionEnded` |
+| `@on_hotword_detected()` | `hermes/hotword/+/detected` |
+| `@on_play_finished("site")` | `hermes/audioServer/.../playFinished` |
+
+---
+
+## `@intent` decorator
+
+`@intent`-decorated callbacks receive `msg.payload` as an `IntentPayload` object — a parsed version of the JSON intent data. Slot values are converted to appropriate Python types.
+
+The session outcome depends on the return value or exception:
+
+| Outcome | How |
+|---------|-----|
+| Session ends with message | Return a string or raise `SnipsError` |
+| Session ends silently | Return `None` with `silent=True` |
+| Continue with question | Raise `SnipsClarificationError` |
+
+### `@min_confidence(threshold, prompt)`
+
+Rejects intents below a confidence threshold. If the confidence score is lower than `threshold`, the user is asked `prompt` to confirm. Default prompt: `"Pardon?"`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `threshold` | `float` | Minimum confidence score (0.0 – 1.0) |
+| `prompt` | `str` | Question to re-ask when confidence is too low |
+
+### `@require_slot(slot, prompt, kind)`
+
+Ensures a required slot is present in the intent. If missing, the user is asked `prompt`. Optionally checks that the slot matches a specific `kind`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `slot` | `str` | Slot name to check |
+| `prompt` | `str` | Question to re-ask when slot is missing |
+| `kind` | `str` or `None` | Expected slot kind (optional) |
+
+### Example
+
+```python
+@intent('example:set-temperature')
+@min_confidence(0.5)
+@require_slot('temperature', 'Which temperature?')
+def set_temp(self, userdata, msg):
+    temp = msg.payload.slot_values['temperature'].value
+    return f"Setting temperature to {temp}"
+```
+
+---
+
+## State tracking
+
+`StateAwareMixin` tracks the last known state of MQTT topics in `self.current_state`. Configure a `status_topic` in `config.ini` under the `[global]` section:
+
+```ini
+[global]
+status_topic = status/#
+```
+
+Subscribes to that topic with JSON decoding; every message updates `self.current_state` and triggers any matching `@when`/`@conditional` handlers. The `publish()` method also avoids redundant updates — if the payload matches the current state, the message is suppressed.
 
 ### Usage
 
 ```python
+from snips_skill import Skill, StateAwareMixin, when
 
-  @when('topic/a > 0')
-  def topic_a_handler(self):
-    ... # do something
-  
-  @conditional('topic/a != 0 or topic/b != 0')
-  def topic_a_or_b_handler(self, on):
-    if on:
-      ... # switch something on
-    else:
-      ... # switch it off
+class MotionLight(Skill, StateAwareMixin):
+    @when('sensor/motion > 0')
+    def light_on(self):
+        self.publish('cmd/light', 'on')
 ```
 
-Boolean expressions, numeric comparisons, string (in)equality
-and string matching with regular expressions are supported.
-As usual, parentheses can be used to control the evaluation order.
+### `@when` decorator
 
-See `test_expr.py` for the exact grammar.
+Triggers the handler whenever a boolean condition becomes true:
+
+```python
+@when('sensor/motion > 0')
+def motion_detected(self):
+    ...  # switch light on
+```
+
+### `@conditional` decorator
+
+Triggers the handler whenever a relevant topic changes, passing `True`/`False`:
+
+```python
+@conditional('sensor/temperature > 25 or sensor/humidity > 80')
+def uncomfortable(self, on):
+    if on:
+        ...  # turn on AC
+    else:
+        ...  # turn off AC
+```
+
+Boolean expressions support comparisons (`<`, `>`, `<=`, `>=`, `==`, `!=`, `~=` regex), `and`, `or`, `not`, and parentheses.
+
+### Boolean expression grammar
+
+The expression parser (`expr.py`) supports a simple grammar for use with `@when` and `@conditional`:
+
+```
+expr       → term
+           | expr AND expr
+           | expr OR expr
+           | NOT expr
+           | LPAREN expr RPAREN
+
+term       → TOPIC LESS NUMBER
+           | TOPIC LESS_EQUAL NUMBER
+           | TOPIC GREATER_EQUAL NUMBER
+           | TOPIC GREATER NUMBER
+           | TOPIC EQUAL literal
+           | TOPIC NOT_EQUAL literal
+           | TOPIC REGEX_MATCH STRING
+
+literal    → NUMBER | STRING
+```
+
+Precedence (highest to lowest): `NOT` > comparisons > `AND` > `OR`. See `snips_skill/test_expr.py` for examples.
+
+---
+
+## Task scheduling
+
+`Scheduler` mixin adds cron-style and delayed task execution.
+
+### `@cron` decorator
+
+Run a method on a cron schedule:
+
+```python
+from snips_skill import Skill, Scheduler, cron
+
+class MySkill(Skill, Scheduler):
+    @cron("0 6 * * *")   # every day at 6:00
+    def morning_routine(self):
+        ...
+```
+
+### `@delay` decorator
+
+Delay method execution by a duration (with optional randomization):
+
+```python
+from snips_skill import delay
+
+@delay(minutes=5, randomize=True)
+def deferred_action(self):
+    ...
+```
+
+---
+
+## Multi-room support
+
+`MultiRoomConfig` maps site IDs to room names from `config.ini` sections. Each section with a `site_id` option (except `[global]` and other standard sections) becomes a named room:
+
+```ini
+[global]
+status_topic = status/#      # not related to rooms; used by StateAwareMixin
+
+[kitchen]
+site_id = main
+some_option = value
+
+[bedroom]
+site_id = bedroom
+another_option = 42
+```
+
+```python
+from snips_skill import MultiRoomConfig
+
+class MultiRoomSkill(Skill, MultiRoomConfig):
+    LOCATION_SLOT = 'room'
+
+    def handle_intent(self, payload):
+        room = self.get_room(payload)
+        config = self.get_room_config(payload)
+        site = self.get_site_id(payload)
+```
+
+Key methods: `get_room()`, `get_current_room()`, `get_room_name()`, `get_room_config()`, `get_site_id()`, `all_rooms()`, `in_current_room()`.
+
+---
+
+## Internationalization
+
+Internationalization uses Python's standard `gettext` module. Run `xgettext` on your Python sources to produce a `.pot` template file, then create `.po` files for each locale and compile them to `.mo` files:
+
+```
+your-skill/
+├── locale/
+│   ├── my_skill.pot                 # template (generated by xgettext)
+│   ├── de_DE/
+│   │   └── LC_MESSAGES/
+│   │       └── my_skill.mo         # compiled from my_skill.po
+│   └── fr_FR/
+│       └── LC_MESSAGES/
+│           └── my_skill.mo
+└── skill.py                         # calls get_translations(__file__, "my_skill")
+```
+
+The `.po` file format follows standard gettext conventions:
+
+```po
+# my_skill.po
+msgid "the kitchen"
+msgstr "die Küche"
+
+msgid "in the kitchen"
+msgstr "in der Küche"
+```
+
+See the [Makefile](Makefile) for the workflow used by this library: `make messages` generates the `.pot` file from source, and `make dist` compiles `.po` to `.mo` before building.
+
+After installing translations with `get_translations(__file__, "my_skill")`, helper functions provide translated room names with articles and prepositions (supports gendered languages like German):
+
+```python
+from snips_skill import room_with_article, room_with_preposition
+
+room_with_article("kitchen")       # "the kitchen" / "die Küche"
+room_with_preposition("kitchen")   # "in the kitchen" / "in der Küche"
+```

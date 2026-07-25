@@ -120,7 +120,6 @@ class IntentPayload(BaseModel, alias_generator=to_camel, serialize_by_alias=True
     site_id: str
     slots: list[Slot] | None = None
     id: str | None = None
-    session_id: str
     custom_data: str
     asr_tokens: list[list[AsrToken]]
     asr_confidence: float

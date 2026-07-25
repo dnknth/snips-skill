@@ -21,6 +21,7 @@ dependencies = [
     "paho-mqtt==1.4.*",
     "ply==3.*",
     "pydantic",
+    "python-decouple>=3.8",
     "toml",
 ]
 dynamic = ["version"]

@@ -230,6 +230,7 @@ dependencies = [
     { name = "paho-mqtt" },
     { name = "ply" },
     { name = "pydantic" },
+    { name = "python-decouple" },
     { name = "toml" },
 ]
 
@@ -240,6 +241,7 @@ requires-dist = [
     { name = "paho-mqtt", specifier = "==1.4.*" },
     { name = "ply", specifier = "==3.*" },
     { name = "pydantic" },
+    { name = "python-decouple", specifier = ">=3.8" },
     { name = "toml" },
 ]
 

@@ -16,7 +16,7 @@ from .dialogue import (
     ActionInit,
     ContinueSession,
     EndSession,
-    NotififationInit,
+    NotificationInit,
     StartSession,
 )
 from .mqtt import MqttClient, MQTTv311, topic
@@ -130,7 +130,7 @@ class SnipsClient(MqttClient):
     def start_session(
         self,
         site_id: str,
-        init: ActionInit | NotififationInit,
+        init: ActionInit | NotificationInit,
         custom_data: Any = None,
         qos: int = 1,
         **kw,
@@ -150,7 +150,7 @@ class SnipsClient(MqttClient):
 
     def speak(self, site_id: str, text: str, **kw) -> None:
         "Say a one-time notification"
-        self.start_session(site_id, init=NotififationInit(text=text), **kw)
+        self.start_session(site_id, init=NotificationInit(text=text), **kw)
 
     # See: https://docs.snips.ai/reference/dialogue#end-session
     def end_session(

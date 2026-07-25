@@ -1,8 +1,8 @@
 import unittest
 from pathlib import Path
 
-from intent import IntentPayload
-from mqtt import MqttMessage
+from snips_skill.intent import IntentPayload
+from snips_skill.mqtt import MqttMessage
 from pydantic import TypeAdapter
 
 from snips_skill.dialogue import EndSession
