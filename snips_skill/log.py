@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from colors import cyan, green, magenta, red, yellow
 
@@ -14,10 +14,10 @@ class LoggingMixin:
     INDENT = 10
     log: logging.Logger
 
-    def colored_log(
+    def coloured_log(
         self, level: int, format: str, *args, color: Callable | None = None
     ) -> None:
-        if color and self.tty_log:  # pyright: ignore[reportAttributeAccessIssue]
+        if color and self.tty_log:
             args = map(color, args)
         self.log.log(level, format, *args)
 
@@ -29,19 +29,15 @@ class LoggingMixin:
         color: Callable | None = None,
         width: int = INDENT,
     ):
-        label = "%-*s" % (width, key)
-        self.colored_log(level, "%s %s", label, str(value), color=color)
+        label = f"{key:<{width}}"
+        self.coloured_log(level, "%s %s", label, str(value), color=color)
 
     def log_intent(self, payload: IntentPayload, level: int = logging.DEBUG) -> None:
         "Log an intent message"
         self.tabular_log(
             level,
             "intent",
-            "%s, confidence: %.1f"
-            % (
-                red(payload.intent.intent_name, style="bold"),
-                payload.intent.confidence_score,
-            ),
+            f"{red(payload.intent.intent_name, style='bold')}, confidence: {payload.intent.confidence_score:.1f}",
             color=green,
         )
         for k in ("site_id", "input"):

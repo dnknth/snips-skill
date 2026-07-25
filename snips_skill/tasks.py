@@ -3,16 +3,17 @@ import os
 import threading
 import time
 from collections import namedtuple
+from collections.abc import Callable, Iterable
 from datetime import datetime, timedelta
 from functools import partial, wraps
 from heapq import heapify, heappop, heappush
 from random import randint
 from signal import SIGUSR2, signal
-from typing import Callable, Iterable
+from typing import ClassVar
 
 from croniter import croniter
 
-__all__ = ("cron", "delay", "now", "Scheduler")
+__all__ = ("Scheduler", "cron", "delay", "now")
 
 
 def now() -> datetime:
@@ -25,7 +26,7 @@ class Tasks(Iterable):
 
     class Task(namedtuple("Task", "when id func")):  # sorted by when
         def __repr__(self):
-            return "Task(%s %s)" % (self.when, self.id)
+            return f"Task({self.when} {self.id})"
 
     def __init__(
         self,
@@ -75,13 +76,11 @@ class Tasks(Iterable):
         return element in self.tasks
 
     def __repr__(self) -> str:
-        return "--- %d Tasks:\n%s" % (
-            len(self),
-            "\n".join(
-                "%2d: %s" % (n + 1, t)
-                for n, t in enumerate(sorted(self.tasks, key=lambda t: (t.when, t.id)))
-            ),
+        tasks = "\n".join(
+            f"{n + 1: 2d}: {t}"
+            for n, t in enumerate(sorted(self.tasks, key=lambda t: (t.when, t.id)))
         )
+        return f"--- {len(self)} Tasks:\n{tasks}"
 
     def __iter__(self):
         return self.tasks.__iter__()
@@ -91,9 +90,7 @@ class Tasks(Iterable):
         if id not in self:
             return
         with self.mutex:
-            for pos in reversed(
-                list(p for p, t in enumerate(self.tasks) if t.id == id)
-            ):
+            for pos in reversed([p for p, t in enumerate(self.tasks) if t.id == id]):
                 task = self.tasks[pos]
                 del self.tasks[pos]
                 self.log.debug(
@@ -139,7 +136,7 @@ class Tasks(Iterable):
     def stop(self) -> None:
         "Stop polling, must be called from the main thread."
         if self.running:
-            self.log.debug("Stopping tasks (%d pending)" % len(self))
+            self.log.debug("Stopping tasks (%d pending)", len(self))
             self.running = False
             self.worker.join()
 
@@ -148,7 +145,7 @@ class Scheduler:
     "Mixin class for time-based task execution"
 
     log: logging.Logger
-    startup_tasks: set[tuple[datetime, Callable]] = set()
+    startup_tasks: ClassVar[set[tuple[datetime, Callable]]] = set()
 
     def run(self) -> None:
         self.log.debug("--- Starting with PID: %d ---", os.getpid())
@@ -166,7 +163,7 @@ class Scheduler:
 
     def dump_tasks(self, _signal, _frame):
         "List pending tasks"
-        print("Pending tasks: %s" % self.tasks)
+        print(f"Pending tasks: {self.tasks}")
 
 
 def delay(minutes: int = 0, seconds: int = 0, randomize: bool = False):
@@ -191,17 +188,15 @@ def delay(minutes: int = 0, seconds: int = 0, randomize: bool = False):
 
 def cron(schedule: str, log_level: int = logging.DEBUG):
     "Decorator for periodic tasks"
-    sequence = croniter(schedule, now())
+    sequence = croniter(schedule, start_time=now(), ret_type=datetime)
 
     def wrapper(method):
         @wraps(method)
         def periodic_task(self):
             if method.__name__ not in self.tasks:
-                when = sequence.get_next(datetime)
-                while when < now():
-                    when = sequence.get_next(datetime)
+                when = sequence.get_next()
                 self.tasks.create(partial(periodic_task, self), when, method.__name__)
-            self.log.log(log_level, "Invoking: %s" % method.__name__)
+            self.log.log(log_level, f"Invoking: {method.__name__}")
             method(self)
 
         Scheduler.startup_tasks.add((sequence.get_next(datetime), periodic_task))

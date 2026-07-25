@@ -3,10 +3,12 @@
 import json
 import logging
 import os
+import ssl
 import uuid
 from argparse import Namespace
+from collections.abc import Iterable
 from functools import partial, wraps
-from typing import Any, Iterable
+from typing import Any
 
 import toml
 from decouple import config
@@ -16,7 +18,7 @@ from .dialogue import (
     ActionInit,
     ContinueSession,
     EndSession,
-    NotififationInit,
+    NotificationInit,
     StartSession,
 )
 from .mqtt import MqttClient, MQTTv311, topic
@@ -76,11 +78,9 @@ class SnipsClient(MqttClient):
         config: str = CONFIG,
     ):
         if client_id is None:
-            client_id = "snips-%s-%s" % (self.__class__.__name__.lower(), os.getpid())
+            client_id = f"snips-{self.__class__.__name__.lower()}-{os.getpid()}"
 
-        super(SnipsClient, self).__init__(
-            client_id, clean_session, userdata, protocol, transport
-        )
+        super().__init__(client_id, clean_session, userdata, protocol, transport)
 
         self.log.debug("Loading config: %s", config)
         self.config = toml.load(config)
@@ -105,10 +105,8 @@ class SnipsClient(MqttClient):
             host = host_port
             port = MqttClient.DEFAULT_PORT
 
-        password = None
         username = common.get("mqtt_username")
-        if username:
-            password = common.get("mqtt_password")
+        password = common.get("mqtt_password")
 
         ca_file = common.get("mqtt_tls_cafile")
         cert = common.get("mqtt_tls_client_cert")
@@ -119,7 +117,10 @@ class SnipsClient(MqttClient):
             assert not common.get("mqtt_tls_hostname"), (
                 "mqtt_tls_hostname not supported"
             )
-            self.tls_set(ca_certs=ca_file, certfile=cert, keyfile=key)
+            context = ssl.create_default_context(cafile=ca_file)
+            if cert:
+                context.load_cert_chain(cert, key)
+            self.tls_set_context(context)
             self._tls_initialized = True
 
         return super().connect(
@@ -130,12 +131,12 @@ class SnipsClient(MqttClient):
     def start_session(
         self,
         site_id: str,
-        init: ActionInit | NotififationInit,
+        init: ActionInit | NotificationInit,
         custom_data: Any = None,
         qos: int = 1,
         **kw,
     ) -> None:
-        "End the session with an optional message"
+        "Start the session with an optional message"
         payload = StartSession(
             site_id=site_id, init=init, custom_data=serialize_custom_data(custom_data)
         )
@@ -150,7 +151,7 @@ class SnipsClient(MqttClient):
 
     def speak(self, site_id: str, text: str, **kw) -> None:
         "Say a one-time notification"
-        self.start_session(site_id, init=NotififationInit(text=text), **kw)
+        self.start_session(site_id, init=NotificationInit(text=text), **kw)
 
     # See: https://docs.snips.ai/reference/dialogue#end-session
     def end_session(
@@ -225,7 +226,7 @@ class SnipsClient(MqttClient):
         try:
             with self.connect():
                 self.loop_forever()
-        except:
+        except Exception:
             if self.options.log_file:
                 self.log.exception("Fatal error")
             raise
@@ -291,7 +292,7 @@ def on_play_finished(site: str = "+", qos: int = 0, log_level=logging.NOTSET):
     )
 
 
-def debug_json(keys: Iterable[str] = []):
+def debug_json(keys: Iterable[str] = ()):
     "Decorator to debug message payloads"
 
     def wrapper(method):
@@ -300,7 +301,7 @@ def debug_json(keys: Iterable[str] = []):
             if type(msg.payload) is dict:
                 data = msg.payload
                 if keys:
-                    data = {k: v for k, v in data.items() if not keys or k in keys}
+                    data = {k: v for k, v in data.items() if k in keys}
                 client.log.debug(
                     "Payload: %s", json.dumps(data, sort_keys=True, indent=2)
                 )

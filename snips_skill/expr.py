@@ -1,8 +1,7 @@
 import re
 from collections import namedtuple
 
-import ply.lex as lex
-import ply.yacc as yacc
+from ply import lex, yacc
 
 
 class Parser:
@@ -22,7 +21,7 @@ class Parser:
             return self.last_state
 
         def __hash__(self):
-            return hash(self.expr)
+            return hash((frozenset(self.keys), self.expr))
 
     tokens = (
         "AND",
@@ -121,40 +120,40 @@ class Parser:
     def p_term_topic_less_number(self, p):
         "term : TOPIC LESS NUMBER"
         lhs, rhs = p[1], p[3]
-        p[0] = self.Expr(set([lhs]), lambda s: float(s[lhs]) < rhs)
+        p[0] = self.Expr({lhs}, lambda s: float(s[lhs]) < rhs)
 
     def p_term_topic_less_equal_number(self, p):
         "term : TOPIC LESS_EQUAL NUMBER"
         lhs, rhs = p[1], p[3]
-        p[0] = self.Expr(set([lhs]), lambda s: float(s[lhs]) <= rhs)
+        p[0] = self.Expr({lhs}, lambda s: float(s[lhs]) <= rhs)
 
     def p_term_topic_greater_equal_number(self, p):
         "term : TOPIC GREATER_EQUAL NUMBER"
         lhs, rhs = p[1], p[3]
-        p[0] = self.Expr(set([lhs]), lambda s: float(s[lhs]) >= rhs)
+        p[0] = self.Expr({lhs}, lambda s: float(s[lhs]) >= rhs)
 
     def p_term_topic_greater_number(self, p):
         "term : TOPIC GREATER NUMBER"
         lhs, rhs = p[1], p[3]
-        p[0] = self.Expr(set([lhs]), lambda s: float(s[lhs]) > rhs)
+        p[0] = self.Expr({lhs}, lambda s: float(s[lhs]) > rhs)
 
     def p_term_topic_equal_literal(self, p):
         "term : TOPIC EQUAL literal"
         lhs, rhs = p[1], p[3]
         cast = type(rhs)
-        p[0] = self.Expr(set([lhs]), lambda s: cast(s[lhs]) == rhs)
+        p[0] = self.Expr({lhs}, lambda s: cast(s[lhs]) == rhs)
 
     def p_term_topic_not_equal_literal(self, p):
         "term : TOPIC NOT_EQUAL literal"
         lhs, rhs = p[1], p[3]
         cast = type(rhs)
-        p[0] = self.Expr(set([lhs]), lambda s: cast(s[lhs]) != rhs)
+        p[0] = self.Expr({lhs}, lambda s: cast(s[lhs]) != rhs)
 
     def p_term_topic_regex_match_string(self, p):
         "term : TOPIC REGEX_MATCH STRING"
         lhs, rhs = p[1], p[3]
         pattern = re.compile(rhs)
-        p[0] = self.Expr(set([lhs]), lambda s: pattern.search(str(s[lhs])) is not None)
+        p[0] = self.Expr({lhs}, lambda s: pattern.search(str(s[lhs])) is not None)
 
     def p_literal(self, p):
         """literal : NUMBER

@@ -11,7 +11,7 @@ from .intent import IntentPayload
 from .log import LoggingMixin
 from .snips import SnipsClient, on_intent
 
-__all__ = ("Skill", "intent", "min_confidence", "PARDON", "require_slot")
+__all__ = ("PARDON", "Skill", "intent", "min_confidence", "require_slot")
 _, ngettext = get_translations(__file__, "snips_skill")
 
 
@@ -36,9 +36,8 @@ class Skill(BaseCmd, LoggingMixin, SnipsClient):
     ):
         # Work around a Paho cleanup bug if called with -h or illegal args
         self._sock = self._sockpairR = self._sockpairW = None
-        super(Skill, self).__init__(
-            client_id=client_id, clean_session=clean_session, userdata=userdata
-        )
+        super().__init__()
+        SnipsClient.__init__(self, client_id, clean_session, userdata)
 
         self.configuration = ConfigParser()
         if os.path.isfile(self.options.config):
@@ -54,28 +53,24 @@ class Skill(BaseCmd, LoggingMixin, SnipsClient):
             "-c",
             "--config",
             default=self.CONFIGURATION_FILE,
-            help="Configuration file (%s)" % self.CONFIGURATION_FILE,
+            help=f"Configuration file ({self.CONFIGURATION_FILE})",
         )
 
     def process_config(self) -> None:
         "May be overridden"
-        pass
 
     def get_config(self, section: str = DEFAULT_SECTION) -> SectionProxy:
         "Get a configuration section, or DEFAULT values"
-        if section in self.configuration:
+        if section in self.configuration.sections():
             return self.configuration[section]
         return self.configuration[self.DEFAULT_SECTION]
 
 
-def intent(
-    intent: str, qos: int = 1, log_level: int = logging.NOTSET, silent: bool = False
-):
+def intent(intent: str, qos: int = 1, log_level: int = logging.NOTSET):
     """Decorator for intent handlers.
     :param intent: Intent name.
     :param qos: MQTT quality of service.
     :param log_level: Log intents at this level, if set.
-    :param silent: Set to `True` for intents that should return `None`
     The wrapped function gets a parsed `IntentPayload` object
     instead of a JSON `msg.payload`.
     If a `SnipsClarificationError` is raised, the session continues with a question.
@@ -93,7 +88,7 @@ def intent(
                 result = method(client, userdata, msg)
                 if log_level and result:
                     client.log_response(result, level=log_level)
-                if result is None and silent:
+                if result is None:
                     client.end_session(msg.payload.session_id, qos=qos)
                     return
                 raise SnipsError(result)
@@ -143,7 +138,7 @@ def require_slot(slot: str, prompt: str, kind: str | None = None):
     def wrapper(method):
         @wraps(method)
         def wrapped(client, userdata, msg):
-            if slot in msg.payload.slots and (
+            if slot in msg.payload.slot_values and (
                 kind is None or msg.payload.slot_values[slot].kind == kind
             ):
                 return method(client, userdata, msg)

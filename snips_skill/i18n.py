@@ -2,13 +2,14 @@ import gettext
 import locale
 import os
 from collections import namedtuple
+from functools import cache
 
 __all__ = (
-    "_",
     "ALL_ROOMS",
     "CONFIRMATIONS",
     "DEFAULT_ROOM_NAMES",
     "ROOMS",
+    "_",
     "get_translations",
     "ngettext",
     "room_with_article",
@@ -16,10 +17,13 @@ __all__ = (
 )
 
 
+@cache
 def get_translations(path: str, domain: str = "messages"):
     "Install translations"
     language, encoding = locale.getlocale()
-    assert type(language) is str, "Unsupported locale: %s" % locale.getlocale()
+    if language is None:
+        null = gettext.NullTranslations()
+        return null.gettext, null.ngettext
     locale.setlocale(locale.LC_ALL, (language, encoding))
     translation = gettext.translation(
         domain,

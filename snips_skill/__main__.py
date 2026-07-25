@@ -8,6 +8,10 @@ from .snips import SnipsClient, on_continue_session, on_end_session, on_intent
 
 
 class Logger(BaseCmd, LoggingMixin, SnipsClient):
+    def __init__(self):
+        super().__init__()
+        SnipsClient.__init__(self)
+
     @on_intent("#")
     # Do not use @intent here because it ends the session,
     # and thus interferes with other intent handlers

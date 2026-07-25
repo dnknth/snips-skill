@@ -1,12 +1,13 @@
 import json
 import logging
+import re
 import sys
 from argparse import ArgumentTypeError, FileType
 from datetime import datetime
 from pathlib import Path
 
 from basecmd import BaseCmd
-from colors import cyan, green, red
+from colors import cyan, green
 
 from .dialogue import ActionInit
 from .log import LoggingMixin
@@ -25,6 +26,8 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
 
     def __init__(self):
         super().__init__()
+        SnipsClient.__init__(self)
+        self.on_connect = Recorder.on_connect.__get__(self)
 
         self.test = None
         self.events = []
@@ -62,7 +65,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
         return FileType("r")(path)
 
     def on_connect(self, client, userdata, flags, rc):
-        super().on_connect(client, userdata, flags, rc)  # pyright: ignore[reportOptionalCall]
+        SnipsClient._on_connect(client, userdata, flags, rc)
 
         if self.options.log_dir:  # Start recording
             if not self.options.log_dir.is_dir():
@@ -96,7 +99,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
             topic = step.get("topic")
             assert topic, "Message topic is missing"
             assert topic.startswith(self.INTENT_PREFIX), (
-                "Intent expected, but got: %s" % topic
+                f"Intent expected, but got: {topic}"
             )
 
             payload = step.get("payload")
@@ -121,7 +124,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
         if self.options.log_dir:
             self.events.append(
                 {
-                    "time": datetime.now().isoformat(),
+                    "time": datetime.now(datetime.UTC).isoformat(),
                     "topic": msg.topic,
                     "payload": msg.payload,
                 }
@@ -139,17 +142,13 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
             assert topic, "Test topic is missing"
             self.log.debug("Test step: %s", topic)
 
-            assert topic == msg.topic, "Expected topic: %s, received: %s" % (
-                topic,
-                msg.topic,
-            )
-
+            assert topic == msg.topic, f"Expected topic: {topic}, received: {msg.topic}"
             payload = step.get("payload")
             assert payload, "Test payload is missing"
 
             text = msg.payload.get("text")
             assert self.options.ignore_text or payload.get("text") == text, (
-                "Expected text: %s, received: %s" % (payload.get("text"), text)
+                f"Expected text: {payload.get('text')}, received: {text}"
             )
 
             if topic.startswith(self.INTENT_PREFIX):
@@ -165,7 +164,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
     @on_session_ended()
     def _on_end(self, userdata, msg):
         if self.test:
-            self._fail("Test has %d remaining steps" % len(self.test))
+            self._fail(f"Test has {len(self.test)} remaining steps")
         self.log.debug("Session ended: %s", msg.payload["sessionId"])
         if self.options.tests:
             self._start_session()
@@ -173,7 +172,7 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
             self._exit()
 
     def _fail(self, e):
-        self.colored_log(logging.ERROR, "%s", e, color=red)
+        self.log.error("%s", e)
         self.failures += 1
         self.test = None
 
@@ -181,6 +180,8 @@ class Recorder(BaseCmd, LoggingMixin, SnipsClient):
         if self.events:
             event = self.events[0]
             intent = event["topic"].replace(self.INTENT_PREFIX, "")
+            # The topic may be attacker-controlled: keep the filename safe
+            intent = re.sub(r"[^A-Za-z0-9_.-]+", "_", intent).strip(".")
             path = self.options.log_dir / f"{event['time']}-{intent}.json"
             self.log.info("Logging session to %s", path)
             with open(path, "w") as out:
