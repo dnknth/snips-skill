@@ -19,7 +19,7 @@ from .snips import (
 from .state import StateAwareMixin, conditional, when
 from .tasks import Scheduler, cron, delay, now
 
-__version__ = "0.1.33"
+__version__ = "0.1.34"
 
 __all__ = (
     "CONFIRMATIONS",

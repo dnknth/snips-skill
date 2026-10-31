@@ -1,5 +1,6 @@
 import logging
 import unittest
+from types import SimpleNamespace
 
 from snips_skill.expr import Parser
 from snips_skill.state import StateAwareMixin, conditional, when
@@ -22,6 +23,27 @@ class StatusUpdateTest(unittest.TestCase):
         path = self.state.on_status_update("status/temp", 21)
         self.assertIsNone(path)
         self.assertEqual(self.state.current_state["status/temp"], 21)
+
+    def test_empty_string_payload_is_ignored(self):
+        path = self.state.on_status_update("status/temp", "")
+        self.assertIsNone(path)
+        self.assertNotIn("status/temp", self.state.current_state)
+
+    def test_none_payload_is_ignored(self):
+        path = self.state.on_status_update("status/temp", None)
+        self.assertIsNone(path)
+        self.assertNotIn("status/temp", self.state.current_state)
+
+    def test_empty_bytes_payload_is_ignored(self):
+        path = self.state.on_status_update("status/temp", b"")
+        self.assertIsNone(path)
+        self.assertNotIn("status/temp", self.state.current_state)
+
+    def test_empty_payload_clears_existing_value(self):
+        self.state.current_state["status/temp"] = 21
+        path = self.state.on_status_update("status/temp", "")
+        self.assertIsNone(path)
+        self.assertNotIn("status/temp", self.state.current_state)
 
 
 class PublishTest(unittest.TestCase):
@@ -89,6 +111,41 @@ class HandlerDispatchTest(unittest.TestCase):
         handler.current_state["status/temp"] = 10
         handler.invoke_handlers("status/temp", 10)
         self.assertEqual(handler.calls, 0)
+
+    def test_empty_payload_does_not_invoke_handler(self):
+        class Handler(StateAwareMixin):
+            def __init__(self):
+                self.calls = 0
+                self.current_state = {}
+                self.log = logging.getLogger("test")
+
+            @when("status/temp > 20")
+            def hot(self):
+                self.calls += 1
+
+        handler = Handler()
+        msg = SimpleNamespace(topic="status/temp", payload="")
+        handler.update_status(None, msg)
+        self.assertEqual(handler.calls, 0)
+        self.assertNotIn("status/temp", handler.current_state)
+
+    def test_empty_payload_clears_and_does_not_invoke_handler(self):
+        class Handler(StateAwareMixin):
+            def __init__(self):
+                self.calls = 0
+                self.current_state = {}
+                self.log = logging.getLogger("test")
+
+            @when("status/temp > 20")
+            def hot(self):
+                self.calls += 1
+
+        handler = Handler()
+        handler.current_state["status/temp"] = 25
+        msg = SimpleNamespace(topic="status/temp", payload="")
+        handler.update_status(None, msg)
+        self.assertEqual(handler.calls, 0)
+        self.assertNotIn("status/temp", handler.current_state)
 
     def test_conditional_passes_value(self):
         received = []

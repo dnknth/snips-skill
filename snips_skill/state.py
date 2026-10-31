@@ -56,6 +56,13 @@ class StateAwareMixin:
         Returns a path to the updated attribute in `self.current_state`
         when the state has changed, or `None` otherwise.
         """
+        # Empty payloads clear the tracked value (e.g. a device reporting no value)
+        if payload in ("", b""):
+            if topic in self.current_state:
+                del self.current_state[topic]
+                self.log.log(self.update_log_level, "Cleared: %s", topic)
+            return
+
         # Update only if the value has changed
         if self.current_state.get(topic) != payload:
             self.current_state[topic] = payload
