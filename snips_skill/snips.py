@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import socket
 import ssl
 import uuid
 from argparse import Namespace
@@ -78,7 +79,7 @@ class SnipsClient(MqttClient):
         config: str = CONFIG,
     ):
         if client_id is None:
-            client_id = f"snips-{self.__class__.__name__.lower()}-{os.getpid()}"
+            client_id = f"snips-{self.__class__.__name__.lower()}-{socket.gethostname()}-{os.getpid()}"
 
         super().__init__(client_id, clean_session, userdata, protocol, transport)
 

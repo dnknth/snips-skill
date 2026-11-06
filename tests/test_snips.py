@@ -1,4 +1,6 @@
 import json
+import os
+import socket
 import unittest
 from argparse import Namespace
 from unittest.mock import MagicMock, patch
@@ -42,10 +44,8 @@ class SnipsClientInitTest(unittest.TestCase):
         ):
             client = snips.SnipsClient()
 
-        self.assertEqual(
-            client._client_id,
-            b"snips-snipsclient-%d" % __import__("os").getpid(),
-        )
+        expected = f"snips-snipsclient-{socket.gethostname()}-{os.getpid()}".encode()
+        self.assertEqual(client._client_id, expected)
         load.assert_called_once()
 
     def test_custom_client_id(self):
