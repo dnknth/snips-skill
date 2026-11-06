@@ -18,7 +18,17 @@ INTENT_JSON = json.dumps(
         "intent": {"intentName": "TurnOn", "confidenceScore": 0.9},
         "siteId": "default",
         "customData": "",
-        "asrTokens": [[{"value": "x", "confidence": 1.0, "rangeStart": 0, "rangeEnd": 1, "time": None}]],
+        "asrTokens": [
+            [
+                {
+                    "value": "x",
+                    "confidence": 1.0,
+                    "rangeStart": 0,
+                    "rangeEnd": 1,
+                    "time": None,
+                }
+            ]
+        ],
         "asrConfidence": 0.9,
         "rawInput": "turn on",
     }
@@ -31,7 +41,17 @@ LOW_CONF_JSON = json.dumps(
         "intent": {"intentName": "TurnOn", "confidenceScore": 0.3},
         "siteId": "default",
         "customData": "",
-        "asrTokens": [[{"value": "x", "confidence": 1.0, "rangeStart": 0, "rangeEnd": 1, "time": None}]],
+        "asrTokens": [
+            [
+                {
+                    "value": "x",
+                    "confidence": 1.0,
+                    "rangeStart": 0,
+                    "rangeEnd": 1,
+                    "time": None,
+                }
+            ]
+        ],
         "asrConfidence": 0.3,
         "rawInput": "turn on",
     }
@@ -44,7 +64,17 @@ SLOT_JSON = json.dumps(
         "intent": {"intentName": "TurnOn", "confidenceScore": 0.9},
         "siteId": "default",
         "customData": "",
-        "asrTokens": [[{"value": "x", "confidence": 1.0, "rangeStart": 0, "rangeEnd": 1, "time": None}]],
+        "asrTokens": [
+            [
+                {
+                    "value": "x",
+                    "confidence": 1.0,
+                    "rangeStart": 0,
+                    "rangeEnd": 1,
+                    "time": None,
+                }
+            ]
+        ],
         "asrConfidence": 0.9,
         "rawInput": "turn on",
         "slots": [
@@ -171,9 +201,7 @@ class IntentDecoratorTest(unittest.TestCase):
         def handler(client, userdata, msg):
             return "answer"
 
-        wrapped = self._register(
-            "TestLog", handler, log_level=logging.DEBUG
-        )
+        wrapped = self._register("TestLog", handler, log_level=logging.DEBUG)
         wrapped(self.client, None, self.msg)
         self.client.log_intent.assert_called_once()
         self.client.log_response.assert_called_once_with("answer", level=logging.DEBUG)
@@ -182,9 +210,7 @@ class IntentDecoratorTest(unittest.TestCase):
         def handler(client, userdata, msg):
             return None
 
-        wrapped = self._register(
-            "TestLogNone", handler, log_level=logging.DEBUG
-        )
+        wrapped = self._register("TestLogNone", handler, log_level=logging.DEBUG)
         wrapped(self.client, None, self.msg)
         self.client.log_intent.assert_called_once()
         self.client.log_response.assert_not_called()

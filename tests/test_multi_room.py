@@ -179,9 +179,7 @@ class GetRoomConfigTest(unittest.TestCase):
     def setUp(self):
         self.m = RoomMixin()
         self.m.sites = {"default": "bedroom"}
-        self.m.configuration = make_config(
-            {"bedroom": {"site_id": "bedroom1"}}
-        )
+        self.m.configuration = make_config({"bedroom": {"site_id": "bedroom1"}})
 
     def test_returns_section(self):
         payload = make_payload(site_id="default", slots=room_slot("bedroom"))

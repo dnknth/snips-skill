@@ -16,7 +16,7 @@ do computations, or trigger devices.
 pip install snips-skill
 ```
 
-Requires Python 3.10+. Dependencies: `paho-mqtt`, `pydantic`, `ply`, `croniter`, `toml`, `basecmd`, `decouple`.
+Requires Python 3.12+. Dependencies: `paho-mqtt`, `pydantic`, `ply`, `croniter`, `toml`, `basecmd`, `decouple`.
 
 ## Contents
 
@@ -40,12 +40,14 @@ Requires Python 3.10+. Dependencies: `paho-mqtt`, `pydantic`, `ply`, `croniter`,
 ```python
 from snips_skill import CommandLineClient, topic
 
+
 class Logger(CommandLineClient):
-    @topic('#')
+    @topic("#")
     def print_msg(self, userdata, msg):
         self.log.info("%s: %s", msg.topic, msg.payload[:64])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     Logger().run()
 ```
 
@@ -55,8 +57,7 @@ Registers a callback for an MQTT topic (supports wildcards). Methods receive `(s
 
 ```python
 @topic("hermes/intent/#", qos=0, payload_converter=decode_json)
-def handler(client, userdata, msg):
-    ...
+def handler(client, userdata, msg): ...
 ```
 
 ---
@@ -83,12 +84,14 @@ Base class for Snips actions. Extends `SnipsClient` with `config.ini` support:
 ```python
 from snips_skill import Skill, intent
 
-class HelloSkill(Skill):
-    @intent('example:hello')
-    def say_hello(self, userdata, msg):
-        return 'Hello, there'
 
-if __name__ == '__main__':
+class HelloSkill(Skill):
+    @intent("example:hello")
+    def say_hello(self, userdata, msg):
+        return "Hello, there"
+
+
+if __name__ == "__main__":
     HelloSkill().run()
 ```
 
@@ -145,11 +148,11 @@ Ensures a required slot is present in the intent. If missing, the user is asked 
 ### Example
 
 ```python
-@intent('example:set-temperature')
+@intent("example:set-temperature")
 @min_confidence(0.5)
-@require_slot('temperature', 'Which temperature?')
+@require_slot("temperature", "Which temperature?")
 def set_temp(self, userdata, msg):
-    temp = msg.payload.slot_values['temperature'].value
+    temp = msg.payload.slot_values["temperature"].value
     return f"Setting temperature to {temp}"
 ```
 
@@ -171,10 +174,11 @@ Subscribes to that topic with JSON decoding; every message updates `self.current
 ```python
 from snips_skill import Skill, StateAwareMixin, when
 
+
 class MotionLight(StateAwareMixin, Skill):
-    @when('sensor/motion > 0')
+    @when("sensor/motion > 0")
     def light_on(self):
-        self.publish('cmd/light', 'on')
+        self.publish("cmd/light", "on")
 ```
 
 ### `@when` decorator
@@ -182,9 +186,8 @@ class MotionLight(StateAwareMixin, Skill):
 Triggers the handler whenever a boolean condition becomes true:
 
 ```python
-@when('sensor/motion > 0')
-def motion_detected(self):
-    ...  # switch light on
+@when("sensor/motion > 0")
+def motion_detected(self): ...  # switch light on
 ```
 
 ### `@conditional` decorator
@@ -192,7 +195,7 @@ def motion_detected(self):
 Triggers the handler whenever a relevant topic changes, passing `True`/`False`:
 
 ```python
-@conditional('sensor/temperature > 25 or sensor/humidity > 80')
+@conditional("sensor/temperature > 25 or sensor/humidity > 80")
 def uncomfortable(self, on):
     if on:
         ...  # turn on AC
@@ -239,10 +242,10 @@ Run a method on a cron schedule:
 ```python
 from snips_skill import Skill, Scheduler, cron
 
+
 class MySkill(Scheduler, Skill):
-    @cron("0 6 * * *")   # every day at 6:00
-    def morning_routine(self):
-        ...
+    @cron("0 6 * * *")  # every day at 6:00
+    def morning_routine(self): ...
 ```
 
 ### `@delay` decorator
@@ -252,9 +255,9 @@ Delay method execution by a duration (with optional randomization):
 ```python
 from snips_skill import delay
 
+
 @delay(minutes=5, randomize=True)
-def deferred_action(self):
-    ...
+def deferred_action(self): ...
 ```
 
 ---
@@ -279,8 +282,9 @@ another_option = 42
 ```python
 from snips_skill import MultiRoomConfig
 
+
 class MultiRoomSkill(MultiRoomConfig, Skill):
-    LOCATION_SLOT = 'room'
+    LOCATION_SLOT = "room"
 
     def handle_intent(self, payload):
         room = self.get_room(payload)
@@ -327,6 +331,6 @@ After installing translations with `get_translations(__file__, "my_skill")`, hel
 ```python
 from snips_skill import room_with_article, room_with_preposition
 
-room_with_article("kitchen")       # "the kitchen" / "die Küche"
-room_with_preposition("kitchen")   # "in the kitchen" / "in der Küche"
+room_with_article("kitchen")  # "the kitchen" / "die Küche"
+room_with_preposition("kitchen")  # "in the kitchen" / "in der Küche"
 ```

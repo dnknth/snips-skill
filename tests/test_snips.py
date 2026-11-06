@@ -124,9 +124,7 @@ class SnipsConnectTest(unittest.TestCase):
             patch.object(snips.ssl, "create_default_context") as ctx,
         ):
             self.client.connect()
-        ctx.return_value.load_cert_chain.assert_called_once_with(
-            "cert.pem", "key.pem"
-        )
+        ctx.return_value.load_cert_chain.assert_called_once_with("cert.pem", "key.pem")
 
     def test_tls_hostname_unsupported(self):
         self.client.config = {
@@ -218,9 +216,7 @@ class SnipsPublishTest(unittest.TestCase):
 
         self.assertEqual(request_id, "rid")
         args = self.client.publish.call_args
-        self.assertEqual(
-            args.args[0], "hermes/audioServer/kitchen/playBytes/rid"
-        )
+        self.assertEqual(args.args[0], "hermes/audioServer/kitchen/playBytes/rid")
         self.assertEqual(args.kwargs["payload"], b"data")
 
     def test_play_sound_with_request_id(self):

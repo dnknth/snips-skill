@@ -14,14 +14,13 @@ from functools import wraps
 from getpass import getpass
 from shutil import get_terminal_size
 from types import FunctionType
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 from basecmd import BaseCmd
 from colors import cyan
 from paho.mqtt.client import Client as PahoClient
 from paho.mqtt.client import MQTTMessageInfo, MQTTv311
 from pydantic import BaseModel
-from typing_extensions import Self
 
 __all__ = ("CommandLineClient", "MqttClient", "decode_json", "topic")
 

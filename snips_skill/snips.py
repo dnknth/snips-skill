@@ -8,11 +8,10 @@ import uuid
 from argparse import Namespace
 from collections.abc import Iterable
 from functools import partial, wraps
-from typing import Any
+from typing import Any, Self
 
 import toml
 from decouple import config
-from typing_extensions import Self
 
 from .dialogue import (
     ActionInit,
@@ -32,6 +31,7 @@ __all__ = (
     "on_intent",
     "on_play_finished",
     "on_session_ended",
+    "on_session_queued",
     "on_session_started",
     "on_start_session",
 )

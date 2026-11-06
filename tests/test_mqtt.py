@@ -2,7 +2,7 @@ import argparse
 import logging
 import sys
 import unittest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from snips_skill import mqtt
@@ -159,9 +159,7 @@ class OnConnectTest(unittest.TestCase):
             patch.object(self.client, "subscribe") as subscribe,
             patch.object(self.client, "message_callback_add") as add,
         ):
-            mqtt.MqttClient._on_connect(
-                self.client, None, {}, 0
-            )
+            mqtt.MqttClient._on_connect(self.client, None, {}, 0)
 
         self.client.log.debug.assert_called()
         self.assertEqual(subscribe.call_args_list[0].args, ("a/b", 0))
@@ -234,7 +232,9 @@ class MqttClientWrapperTest(unittest.TestCase):
     def test_publish(self):
         with patch.object(mqtt.PahoClient, "publish", return_value="info") as pub:
             self.assertEqual(
-                self.client.publish("a/b", "payload", qos=1, retain=True, log_level=logging.WARNING),
+                self.client.publish(
+                    "a/b", "payload", qos=1, retain=True, log_level=logging.WARNING
+                ),
                 "info",
             )
         pub.assert_called_once_with("a/b", "payload", 1, True)
@@ -261,7 +261,7 @@ class MqttClientWrapperTest(unittest.TestCase):
 
 class MqttMessageTest(unittest.TestCase):
     def test_model_round_trip(self):
-        ts = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        ts = datetime(2020, 1, 1, tzinfo=UTC)
         msg = mqtt.MqttMessage(time=ts, topic="a/b", payload={"k": 1})
         self.assertEqual(msg.topic, "a/b")
         self.assertEqual(msg.payload["k"], 1)
@@ -283,7 +283,9 @@ class TopicLogLevelTest(unittest.TestCase):
 
         wrapped = mqtt.MqttClient.SUBSCRIPTIONS["test/log"][0]
         wrapped(client, None, msg)
-        client.log.log.assert_called_once_with(logging.WARNING, "Received message: %s", "test/log")
+        client.log.log.assert_called_once_with(
+            logging.WARNING, "Received message: %s", "test/log"
+        )
 
 
 class CommandLineClientTest(unittest.TestCase):

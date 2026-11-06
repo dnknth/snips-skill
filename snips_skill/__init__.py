@@ -13,13 +13,14 @@ from .snips import (
     on_intent,
     on_play_finished,
     on_session_ended,
+    on_session_queued,
     on_session_started,
     on_start_session,
 )
 from .state import StateAwareMixin, conditional, when
 from .tasks import Scheduler, cron, delay, now
 
-__version__ = "0.1.34"
+__version__ = "0.1.35"
 
 __all__ = (
     "CONFIRMATIONS",
@@ -50,6 +51,7 @@ __all__ = (
     "on_intent",
     "on_play_finished",
     "on_session_ended",
+    "on_session_queued",
     "on_session_started",
     "on_start_session",
     "require_slot",

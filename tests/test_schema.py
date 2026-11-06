@@ -3,7 +3,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from pydantic import TypeAdapter
-
 from snips_skill.dialogue import EndSession
 from snips_skill.intent import (
     DurationValue,
