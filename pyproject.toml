@@ -15,7 +15,7 @@ dynamic = ["version"]
 dependencies = [
     "basecmd",
     "croniter",
-    "paho-mqtt==1.4.*",
+    "paho-mqtt>=1.4,<2.3",
     "ply==3.*",
     "pydantic",
     "python-decouple>=3.8",
